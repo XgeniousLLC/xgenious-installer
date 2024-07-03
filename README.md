@@ -14,6 +14,46 @@ composer require xgenious/installer
 ```shell
 php artisan vendor:publish --provider="Xgenious\Installer\InstallerServiceProvider" --tag="config"
 ```
+
+### Add Midleware in ```app\Http\Kernel.php``` fle
+``
+\Xgenious\Installer\Http\Middleware\InstallerMiddleware::class
+``
+```php
+
+example
+  protected $middleware = [
+        /* Laravel defult middleware */
+        \Xgenious\Installer\Http\Middleware\InstallerMiddleware::class
+    ];
+````
+
+### Config Value Explanation
+
+```php
+# config/installer.php
+
+return [
+    'app_name' => 'Fundorex', //app name 
+    'super_admin_role_id' => 3, // super admin role id
+    'admin_model' => \App\Admin::class, //admin modal 
+    'admin_table' => 'admins', //admin table
+    'multi_tenant' => false,
+    'author' => 'xgenious', // envato author username
+    'product_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e', //product key from xgenious license server
+    'php_version' => '8.1', //minimum required php version
+    'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'pdo_mysql', 'Tokenizer', 'XML', 'cURL', 'fileinfo'], //required php extensions
+    'website' => 'https://xgenious.com', //author website url
+    'email' => 'support@xgenious.com', //support url
+    'env_example_path' => public_path('env-sample.txt'), //env-sample.txt file locaation, env will be generate based on this file contenant
+    'broadcast_driver' => 'log', // default config value 
+    'cache_driver' => 'file', // default config value 
+    'queue_connection' => 'sync', // default config value 
+    'mail_port' => '587', // default config value 
+    'mail_encryption' => 'tls', // default config value 
+];
+```
+
 ## Running Tests
 To run the test suite for this package, follow these steps:
 
