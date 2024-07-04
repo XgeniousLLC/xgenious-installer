@@ -207,11 +207,13 @@ class InstallationHelper
                 'password' => Hash::make($admin_password),
             ]);
 
-            DB::connection('temp')->table('model_has_roles')->insert([
-                'role_id' => \config('installer.super_admin_role_id',3),
-                'model_type' => self::sanitize_class_string($admin_model),
-                'model_id' => $admin_id,
-            ]);
+            if(\config('installer.model_has_roles')){
+                DB::connection('temp')->table('model_has_roles')->insert([
+                    'role_id' => \config('installer.super_admin_role_id',3),
+                    'model_type' => self::sanitize_class_string($admin_model),
+                    'model_id' => $admin_id,
+                ]);
+            }
 
             return [
                 'type' => 'success',
