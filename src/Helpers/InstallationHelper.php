@@ -150,7 +150,7 @@ class InstallationHelper
         DB::purge('temp'); // Clear the previous connection, if any
         DB::reconnect('temp'); // Reconnect with the new configuration
     }
-    
+
     public static function generate_env_file($keyValuePairs)
     {
         $envSamplePath = self::has_env_sample_file() ? \config('installer.env_example_path') : __DIR__.'/../../env-sample.txt'; // Adjust the path as needed
