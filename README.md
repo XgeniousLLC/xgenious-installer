@@ -53,6 +53,7 @@ return [
     'queue_connection' => 'sync', // default config value 
     'mail_port' => '587', // default config value 
     'mail_encryption' => 'tls', // default config value 
+    'model_has_roles' => true
 ];
 ```
 
