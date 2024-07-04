@@ -724,6 +724,7 @@
                             <button type="button" class="previous action-button">Previous</button>
                             <button type="button"
                                     class="next action-button"
+                                    id="folder_permission_next_btn"
                                     @if ($folder_errors > 0) disabled @endif
                                 >
                                 Next
@@ -736,7 +737,7 @@
                                 <tr>
                                     <td><strong>Database</strong></td>
                                     <td>Required <strong>database.sql</strong> available</td>
-                                    <td>
+                                    <td id="database_check_icon_td">
                                         @if(\Xgenious\Installer\Helpers\InstallationHelper::has_database_file())
                                             <div class="icon check"><i class="las la-check-circle" aria-hidden="true"></i></div>
                                             @else
@@ -747,10 +748,10 @@
                                 </tbody>
                             </table>
                             @if (!\Xgenious\Installer\Helpers\InstallationHelper::has_database_file())
-                            <div class="alert alert-danger mt-2" style="font-size: 12px;margin-top: 20px;padding: 5px 20px;">Your installation file <strong>database.sql</strong> file is missing, redownload files from codecanyon, or contact support</div>
+                            <div class="alert alert-danger mt-2" id="database_error_message" style="font-size: 12px;margin-top: 20px;padding: 5px 20px;">Your installation file <strong>database.sql</strong> file is missing, redownload files from codecanyon, or contact support</div>
                             @endif
                             <button type="button" class="previous action-button">Previous</button>
-                            <button type="button" class="next action-button" @if (!\Xgenious\Installer\Helpers\InstallationHelper::has_database_file()) disabled @endif > Next</button>
+                            <button type="button" id="database_check_next_btn" class="next action-button" @if (!\Xgenious\Installer\Helpers\InstallationHelper::has_database_file()) disabled @endif > Next</button>
                         </div>
                         <div class="content-wrap with-step">
                             <h4>Database & Admin Information</h4>
@@ -813,7 +814,7 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="copyright-inner">
-                    &copy; {{date('Y')}} All Right Reserved By <a href="https//{{config('installer.author')}}.com/">XGENIOUS</a>
+                    &copy; {{date('Y')}} All Right Reserved By <a href="{{config('installer.website')}}">{{config('installer.author')}}</a>
                 </div>
             </div>
         </div>
@@ -928,6 +929,38 @@
             }
         });
 
+
+        /**
+        *
+        * */
+
+        $(document).on('click','#folder_permission_next_btn',function (e){
+            e.preventDefault();
+            var el = $(this);
+
+            $.ajax({
+                type: 'GET',
+                url: `{{route('installer.check-database.exists')}}`,
+                success: function (data){
+                    let iconWrap = $('#database_check_icon_td .icon');
+                    let erroWrapper = $('#database_error_message');
+                    let nextBtn = $('#database_check_next_btn');
+                    if(data.type === 'success'){
+                        iconWrap.removeClass('close').addClass('check');
+                        iconWrap.find('i').removeClass('la-times-circle').addClass('la-check-circle');
+                        erroWrapper.hide();
+                        nextBtn.attr('disabled',false)
+                    }else {
+                        iconWrap.removeClass('check').addClass('close')
+                        iconWrap.find('i').removeClass('la-check-circle').addClass('la-times-circle');
+                        erroWrapper.html(data.msg);
+                        erroWrapper.show();
+                        nextBtn.attr('disabled',true)
+                    }
+                }
+            });
+
+        });
 
         /**
          * purchase code verify

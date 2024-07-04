@@ -29,43 +29,6 @@ class InstallationHelper
     {
         return env('DB_CONNECTION') === null;
     }
-    public function createEnvFile(array $data)
-    {
-        $envExample = file_get_contents(base_path('.env.example'));
-        $newEnvContent = str_replace([
-            'APP_NAME=Laravel',
-            'APP_URL=http://localhost',
-            'DB_HOST=127.0.0.1',
-            'DB_DATABASE=laravel',
-            'DB_USERNAME=root',
-            'DB_PASSWORD=',
-        ], [
-            'APP_NAME="'.$data['app_name'].'"',
-            'APP_URL='.$data['app_url'],
-            'DB_HOST='.$data['database_host'],
-            'DB_DATABASE='.$data['database_name'],
-            'DB_USERNAME='.$data['database_username'],
-            'DB_PASSWORD="'.$data['database_password'].'"',
-        ], $envExample);
-
-        file_put_contents(base_path('.env'), $newEnvContent);
-    }
-
-    public function updateDatabaseConfig(array $data)
-    {
-        config([
-            'database.connections.mysql.host' => $data['database_host'],
-            'database.connections.mysql.database' => $data['database_name'],
-            'database.connections.mysql.username' => $data['database_username'],
-            'database.connections.mysql.password' => $data['database_password'],
-        ]);
-    }
-
-    public function migrateAndSeedDatabase()
-    {
-        //todo:: write code for insert the sql file
-//        Artisan::call('migrate:fresh', ['--seed' => true]);
-    }
 
 
     public  static function extension_check($name)
@@ -187,9 +150,11 @@ class InstallationHelper
         DB::purge('temp'); // Clear the previous connection, if any
         DB::reconnect('temp'); // Reconnect with the new configuration
     }
+    
     public static function generate_env_file($keyValuePairs)
     {
-        $envSamplePath = public_path('env-sample.txt'); // Adjust the path as needed
+        $envSamplePath = self::has_env_sample_file() ? \config('installer.env_example_path') : __DIR__.'/../../env-sample.txt'; // Adjust the path as needed
+
         $envPath = base_path('.env');
 
         // Read the sample environment file

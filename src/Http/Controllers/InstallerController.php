@@ -164,4 +164,13 @@ class InstallerController extends Controller
         $msg .= '<a href="'.url('/').'">visit website</a> <p>'.$tenant_msg.'. setup cron job for subscription system work properly here is article for it <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/cron-job/"><i class="las la-external-link-alt"></i></a></p>'; //write instruction message for multi tenant or normal script
         return response()->json(['type' => 'success', 'msg' => $msg]);
     }
+
+    public function checkDatabaseExists()
+    {
+        // check database.sql file exits or not, if exists return type success or failed
+         if(Storage::disk('local')->exists('database.sql')){
+             return response()->json(['type' => 'success', 'msg' => 'database.sql file found']);
+         }
+        return response()->json(['type' => 'danger', 'msg' => 'Your installation file <strong>database.sql</strong> file is missing, redownload files from codecanyon, or contact support']);
+    }
 }
