@@ -203,6 +203,7 @@ class InstallationHelper
                 'name' => $admin_name,
                 'email' => $admin_email,
                 'username' => $admin_username,
+                'role' => \config('installer.super_admin_role_id',3),
                 'password' => Hash::make($admin_password),
             ]);
 
