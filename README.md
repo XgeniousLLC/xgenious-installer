@@ -56,6 +56,20 @@ return [
 ];
 ```
 
+## Migrate from old Installer
+remove ``install`` folder, and remove ``install`` folder redirection from the root ``index.php ``file
+
+### Minimal ``.env`` File Required
+here is example of minimal ``.env`` file.
+
+```php
+APP_NAME=Fundorex
+APP_ENV=production
+APP_KEY=base64:8e5wSFpua5CzuHhXJEaJHcpRFBR2nqLAV0zTURuXgLA=
+APP_DEBUG=false
+APP_URL=http://fundorex.test/
+```
+
 ## Running Tests
 To run the test suite for this package, follow these steps:
 
