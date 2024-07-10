@@ -53,7 +53,9 @@ return [
     'queue_connection' => 'sync', // default config value 
     'mail_port' => '587', // default config value 
     'mail_encryption' => 'tls', // default config value 
-    'model_has_roles' => true
+    'model_has_roles' => true,
+    'bundle_pack' => false, //if the product has bundle pack
+    'bundle_pack_key' => 'dsfasd', //bundle pack product key
 ];
 ```
 

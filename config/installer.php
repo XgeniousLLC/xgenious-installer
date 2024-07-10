@@ -19,6 +19,6 @@ return [
     'mail_port' => '587',
     'mail_encryption' => 'tls',
     'model_has_roles' => true,
-    'bundle_pack' => true,
+    'bundle_pack' => false,
     'bundle_pack_key' => 'dsfasd',
 ];
