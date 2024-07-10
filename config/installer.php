@@ -18,5 +18,7 @@ return [
     'queue_connection' => 'sync',
     'mail_port' => '587',
     'mail_encryption' => 'tls',
-    'model_has_roles' => true
+    'model_has_roles' => true,
+    'bundle_pack' => true,
+    'bundle_pack_key' => 'dsfasd',
 ];

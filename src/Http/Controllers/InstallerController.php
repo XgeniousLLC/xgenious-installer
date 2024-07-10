@@ -38,11 +38,15 @@ class InstallerController extends Controller
         $domain = url('/');
         $url = InstallationHelper::$api_path;
         $puuid = config('installer.product_key');
+
+        if(Config::get('bundle_pack', false)){
+            $puuid = config('installer.bundle_pack_key');
+        }
+
         if(empty($puuid)){
             return response()->json(['type' => 'danger','msg' => 'product key is missing']);
         }
         try {
-
 
             $response = Http::get($url, [
                 'puid' => $puuid,
