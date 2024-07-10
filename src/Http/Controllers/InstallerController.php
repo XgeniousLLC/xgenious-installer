@@ -128,7 +128,7 @@ class InstallerController extends Controller
 
         $keyValuePairs = [
             'APP_DEBUG' => 'true',
-            'APP_URL' => url('/'),
+            'APP_URL' => trim(url('/'),'/'),
             'DB_HOST' => $request->db_host,
             'DB_DATABASE' => $request->db_name,
             'DB_USERNAME' => $request->db_username,
