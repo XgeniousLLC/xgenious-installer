@@ -623,11 +623,11 @@
                             <h4>Purchase Verify</h4>
                             <div class="form-block">
                                 <div class="form-group">
-                                    <label>Envato Username</label>
+                                    <label>Your Envato Username</label>
                                     <input type="text" class="form-control" placeholder="username" name="en_username">
                                 </div>
                                 <div class="form-group">
-                                    <label>Purchase Code</label>
+                                    <label>Your Purchase Code</label>
                                     <input type="text" class="form-control" placeholder="xxxx-xxxx-xxxx-xxxx-xxxx" name="en_purchase_code">
                                     <small>Follow this article to  <a target="_blank" href="https://xgenious.com/where-can-i-find-my-purchase-code-at-codecanyon/">get your purchase code</a></small>
                                 </div>
