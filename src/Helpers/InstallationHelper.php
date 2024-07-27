@@ -271,4 +271,11 @@ class InstallationHelper
             'msg' => 'Environment file updated successfully.'
         ];
     }
+    public static function remove_middleware($middleware)
+    {
+        \Illuminate\Support\Facades\Artisan::call('xgenious:remove-middleware', [
+            'middleware' => $middleware
+        ]);
+    }
+
 }

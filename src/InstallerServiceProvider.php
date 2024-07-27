@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Xgenious\Installer\Commands\RemoveMiddlewareCommand;
 use Xgenious\Installer\Helpers\InstallationHelper;
 
 class InstallerServiceProvider extends ServiceProvider
@@ -20,6 +21,12 @@ class InstallerServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/installer.php' => config_path('installer.php'),
         ], 'config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                RemoveMiddlewareCommand::class,
+            ]);
+        }
 
     }
 

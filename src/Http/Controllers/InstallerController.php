@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Xgenious\Installer\Helpers\InstallationHelper;
+use Xgenious\Installer\Helpers\CacheCleaner;
 
 class InstallerController extends Controller
 {
@@ -174,6 +175,7 @@ class InstallerController extends Controller
             $tenant_msg =
                 'do not forget to setup wildcard subdomain in order to create subdomain by the system automatically <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/wildcard-subdomain-configuration/"><i class="las la-external-link-alt"></i></a>';
         }
+
         //generate env file based on user and config file data
         InstallationHelper::generate_env_file($keyValuePairs);
         $db_host = $request->db_host;
@@ -191,7 +193,7 @@ class InstallerController extends Controller
             InstallationHelper::reverse_to_default_env();
             return response()->json([
                 "type" => "danger",
-                "msg" => $exception->getMessage(),
+                "msg" => 'failed to update env',
             ]);
         }
         $admin_email = $request->admin_email;
@@ -210,6 +212,13 @@ class InstallerController extends Controller
             $db_user,
             $db_pass
         );
+
+        // remove cache file
+        CacheCleaner::clearAllCaches();
+
+        //remove demo middleware
+        InstallationHelper::remove_middleware('\App\Http\Middleware\Demo::class');
+
         $msg =
             "Installation Successful, if you still see install notice in your website, clear your browser cache ";
         $msg .=

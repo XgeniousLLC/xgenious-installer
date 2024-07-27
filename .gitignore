@@ -3,4 +3,6 @@
 /.vs-code
 .idea
 .vscode
-.vs-code 
+.vs-code
+vendor
+.trunk
