@@ -23,19 +23,16 @@ class InstallerServiceProvider extends ServiceProvider
             __DIR__.'/../config/installer.php' => config_path('installer.php'),
         ], 'config');
 
-<<<<<<< HEAD
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 RemoveMiddlewareCommand::class,
             ]);
         }
-
-=======
         // Check if the application is using HTTPS and force SSL if true
         if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
             URL::forceScheme('https');
         }
->>>>>>> b277035d70e739d50e5e3fef1e7391324328794f
     }
 
 
