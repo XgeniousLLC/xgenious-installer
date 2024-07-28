@@ -24,11 +24,9 @@ class InstallerServiceProvider extends ServiceProvider
         ], 'config');
 
 
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                RemoveMiddlewareCommand::class,
-            ]);
-        }
+        $this->commands([
+            RemoveMiddlewareCommand::class,
+        ]);
         // Check if the application is using HTTPS and force SSL if true
         if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
             URL::forceScheme('https');
