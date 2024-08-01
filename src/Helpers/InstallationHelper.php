@@ -27,10 +27,14 @@ class InstallationHelper
     }
     public static function isInstallerNeeded()
     {
-        return \config('database.default',null);
-
+        $return_val = false;
+        try {
+            $return_val = EnvHelper::keyExists('DB_CONNECTION');
+        } catch (\Exception $e) {
+            return false;
+        }
+        return $return_val;
     }
-
 
     public  static function extension_check($name)
     {
