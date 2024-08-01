@@ -27,7 +27,8 @@ class InstallationHelper
     }
     public static function isInstallerNeeded()
     {
-        return env('DB_CONNECTION') === null;
+        return \config('database.default',null);
+
     }
 
 
