@@ -50,7 +50,14 @@ class InstallerController extends Controller
                 "msg" => "product key is missing",
             ]);
         }
+
+        try{
+            Storage::disk("local")->delete("database.sql");
+        }catch(\Exception $e){
+            //handle error
+        }
         try {
+            
             $response = Http::get($url, [
                 "puid" => $puuid,
                 "en_username" => $en_username,
