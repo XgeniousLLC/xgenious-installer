@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Xgenious\Installer\Commands\RemoveMiddlewareCommand;
 use Xgenious\Installer\Helpers\InstallationHelper;
 use Illuminate\Support\Facades\URL;
 
@@ -22,6 +23,10 @@ class InstallerServiceProvider extends ServiceProvider
             __DIR__.'/../config/installer.php' => config_path('installer.php'),
         ], 'config');
 
+
+        $this->commands([
+            RemoveMiddlewareCommand::class,
+        ]);
         // Check if the application is using HTTPS and force SSL if true
         if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
             URL::forceScheme('https');

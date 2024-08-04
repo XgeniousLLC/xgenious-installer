@@ -27,9 +27,14 @@ class InstallationHelper
     }
     public static function isInstallerNeeded()
     {
-        return env('DB_CONNECTION') === null;
+        $return_val = false;
+        try {
+            $return_val = EnvHelper::keyExists('DB_CONNECTION');
+        } catch (\Exception $e) {
+            return false;
+        }
+        return $return_val;
     }
-
 
     public  static function extension_check($name)
     {
@@ -177,7 +182,6 @@ class InstallationHelper
 
     public  static  function insert_database_sql_file($db_host,$db_name,$db_user,$db_pass)
     {
-
         $db = new \PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
         // set the PDO error mode to exception
         $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -271,4 +275,11 @@ class InstallationHelper
             'msg' => 'Environment file updated successfully.'
         ];
     }
+    public static function remove_middleware($middleware)
+    {
+        \Illuminate\Support\Facades\Artisan::call('xgenious:remove-middleware', [
+            'middleware' => $middleware
+        ]);
+    }
+
 }
