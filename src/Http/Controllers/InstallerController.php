@@ -159,7 +159,7 @@ class InstallerController extends Controller
             "DB_USERNAME" => $request->db_username,
             "DB_PASSWORD" => is_null($request->db_password)
                 ? ""
-                : $request->db_password,
+                : '"'.$request->db_password.'"',
             "BROADCAST_DRIVER" => config("installer.broadcast_driver", "log"),
             "CACHE_DRIVER" => config("installer.cache_driver", "file"),
             "QUEUE_CONNECTION" => config("installer.queue_connection", "sync"),
