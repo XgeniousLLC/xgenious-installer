@@ -10,6 +10,7 @@ class InstallerMiddleware
 {
     public function handle($request, Closure $next)
     {
+
         if (!InstallationHelper::isInstallerNeeded() && !$request->is(['install','install/verify-purchase','install/check-database','install/check-database-exists'])) {
             return redirect('/install');
         }
