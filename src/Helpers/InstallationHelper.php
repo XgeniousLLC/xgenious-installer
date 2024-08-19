@@ -203,13 +203,16 @@ class InstallationHelper
         $admin_model = \config('installer.admin_model',App\Admin::class);
         $admin_table = \config('installer.admin_table','admins');
         try {
-            $admin_id =  DB::connection('temp')->table($admin_table)->insertGetId([
+            $admin_data = [
                 'name' => $admin_name,
                 'email' => $admin_email,
                 'username' => $admin_username,
-                'role' => \config('installer.super_admin_role_id',3),
                 'password' => Hash::make($admin_password),
-            ]);
+            ];
+            if (!\config('installer.model_has_roles')){
+                $admin_data['role'] = \config('installer.super_admin_role_id',3);
+            }
+            $admin_id =  DB::connection('temp')->table($admin_table)->insertGetId($admin_data);
 
             if(\config('installer.model_has_roles')){
                 DB::connection('temp')->table('model_has_roles')->insert([
