@@ -29,7 +29,7 @@ class InstallationHelper
     {
         $return_val = false;
         try {
-            $return_val = EnvHelper::keyExists('DB_CONNECTION');
+            $return_val = !EnvHelper::keyExists('DB_CONNECTION');
         } catch (\Exception $e) {
             return false;
         }
