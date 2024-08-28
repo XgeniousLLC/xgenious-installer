@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Schema;
 use Xgenious\Installer\Commands\RemoveMiddlewareCommand;
 use Xgenious\Installer\Helpers\InstallationHelper;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\App;
+
 
 class InstallerServiceProvider extends ServiceProvider
 {
@@ -28,7 +30,7 @@ class InstallerServiceProvider extends ServiceProvider
             RemoveMiddlewareCommand::class,
         ]);
         // Check if the application is using HTTPS and force SSL if true
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+        if (!request()->secure() && App::environment('production')) {
             URL::forceScheme('https');
         }
     }
