@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app_name' => 'Fundorex',
+    'app_name' => 'Fundorex', // must use one word, like Fundorex or Nazmart
     'super_admin_role_id' => 3,
     'admin_model' => \App\Admin::class,
     'admin_table' => 'admins',
@@ -20,5 +20,5 @@ return [
     'mail_encryption' => 'tls',
     'model_has_roles' => true,
     'bundle_pack' => false,
-    'bundle_pack_key' => 'dsfasd',
+    'bundle_pack_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e',
 ];
