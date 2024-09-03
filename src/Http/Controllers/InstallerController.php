@@ -178,7 +178,7 @@ class InstallerController extends Controller
         if (config("installer.multi_tenant", false)) {
             $keyValuePairs["CENTRAL_DOMAIN"] = $request->getHost();
             $keyValuePairs["TENANT_DATABASE_PREFIX"] =
-                strtolower(env("APP_NAME")) . "_tenant_db_";
+                \Str::kebab(config("installer.app_name", "multitenant")) . "_tenant_db_";
             $tenant_msg =
                 'do not forget to setup wildcard subdomain in order to create subdomain by the system automatically <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/wildcard-subdomain-configuration/"><i class="las la-external-link-alt"></i></a>';
         }
