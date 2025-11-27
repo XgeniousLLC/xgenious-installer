@@ -758,6 +758,13 @@
                             <div class="form-block">
                                 <h5>Database Information</h5>
                                 <div class="form-group">
+                                    <label for="database_driver">Database Driver</label>
+                                    <select name="database_driver" id="database_driver" class="form-control">
+                                        <option value="mysql">MySQL</option>
+                                        <option value="pgsql">PostgreSQL</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label for="database_host">Database Host</label>
                                     <input type="text" name="database_host" id="database_host" class="form-control"
                                            value="localhost" placeholder="Database Host">
@@ -870,6 +877,7 @@
                     url: `{{route('installer.check-database')}}`,
                     data:{
                         '_token' : `{{csrf_token()}}`,
+                        'db_driver' : $('select[name="database_driver"]').val(),
                         'db_name' : $('input[name="database_name"]').val(),
                         'db_username' : $('input[name="database_username"]').val(),
                         'db_host' : $('input[name="database_host"]').val(),
@@ -908,6 +916,7 @@
                     url: `{{route('installer.install')}}`,
                     data:{
                         '_token' : `{{csrf_token()}}`,
+                        'db_driver' : $('select[name="database_driver"]').val(),
                         'db_name' : $('input[name="database_name"]').val(),
                         'db_username' : $('input[name="database_username"]').val(),
                         'db_host' : $('input[name="database_host"]').val(),

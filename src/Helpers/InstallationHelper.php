@@ -92,8 +92,9 @@ class InstallationHelper
 
     public static function has_database_file()
     {
-        // check storage has the database file or not
-        return Storage::disk('local')->exists('database.sql');
+        // check storage has the database file (MySQL or PostgreSQL) or not
+        return Storage::disk('local')->exists('database.sql')
+            || Storage::disk('local')->exists('database_pgsql.sql');
     }
     public static function has_env_sample_file()
     {
@@ -122,9 +123,9 @@ class InstallationHelper
     }
 
 
-    public static function check_database_connection($db_host,$db_name,$db_user,$db_pass)
+    public static function check_database_connection($db_driver,$db_host,$db_name,$db_user,$db_pass)
     {
-        self::set_temp_db_connection($db_host,$db_name,$db_user,$db_pass);
+        self::set_temp_db_connection($db_driver,$db_host,$db_name,$db_user,$db_pass);
         try {
             DB::connection('temp')->getPdo();
             return ['status' => true,'msg' => 'connection successful'];
@@ -132,11 +133,17 @@ class InstallationHelper
             return ['status' => false,'msg' => $e->getMessage()];
         }
     }
-    private static function set_temp_db_connection($db_host,$db_name,$db_user,$db_pass){
+    private static function set_temp_db_connection($db_driver,$db_host,$db_name,$db_user,$db_pass){
+        $defaultPort = Config::get("database.connections.$db_driver.port");
+
+        if (empty($defaultPort)) {
+            $defaultPort = $db_driver === 'pgsql' ? 5432 : 3306;
+        }
+
         Config::set('database.connections.temp', [
-            'driver' => 'mysql',
+            'driver' => $db_driver,
             'host' => $db_host,
-            'port' => Config::get('database.connections.mysql.port'),
+            'port' => $defaultPort,
             'database' => $db_name,
             'username' => $db_user,
             'password' => is_null($db_pass) ? "" : $db_pass,
@@ -147,9 +154,9 @@ class InstallationHelper
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $db_driver === 'mysql'
+                ? (extension_loaded('pdo_mysql') ? array_filter([\PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA')]) : [])
+                : [],
         ]);
 
         DB::purge('temp'); // Clear the previous connection, if any
@@ -180,25 +187,35 @@ class InstallationHelper
         return 'base64:' . base64_encode(Str::random(32));
     }
 
-    public  static  function insert_database_sql_file($db_host,$db_name,$db_user,$db_pass)
+    public  static  function insert_database_sql_file($db_driver,$db_host,$db_name,$db_user,$db_pass)
     {
-        $db = new \PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
+        $dsn = "{$db_driver}:host={$db_host};dbname={$db_name}";
+        $db = new \PDO($dsn, $db_user, $db_pass);
         // set the PDO error mode to exception
         $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
-        $query = Storage::drive('local')->get("database.sql");
+        $sql_file = $db_driver === 'pgsql' ? 'database_pgsql.sql' : 'database.sql';
+
+        if (!Storage::disk('local')->exists($sql_file)) {
+            return [
+                'type' => 'danger',
+                'msg' => sprintf('SQL file "%s" not found.', $sql_file),
+            ];
+        }
+
+        $query = Storage::drive('local')->get($sql_file);
         $stmt = $db->prepare($query);
         $result = (bool)$stmt->execute();
 
         return [
             'type' => $result ? 'success':'danger',
-            'msg' => $result ? 'Database insert success' : 'SQL file not found.'
+            'msg' => $result ? 'Database insert success' : 'Database insert failed.',
         ];
     }
 
-    public static  function create_admin($admin_email,$admin_password,$admin_username,$admin_name,$db_host,$db_name,$db_user,$db_pass)
+    public static  function create_admin($db_driver,$admin_email,$admin_password,$admin_username,$admin_name,$db_host,$db_name,$db_user,$db_pass)
     {
-        self::set_temp_db_connection($db_host,$db_name,$db_user,$db_pass);
+        self::set_temp_db_connection($db_driver,$db_host,$db_name,$db_user,$db_pass);
         DB::connection('temp');
         $admin_model = \config('installer.admin_model',App\Admin::class);
         $admin_table = \config('installer.admin_table','admins');
@@ -206,7 +223,7 @@ class InstallationHelper
             $admin_data = [
                 'name' => $admin_name,
                 'email' => $admin_email,
-                'username' => $admin_username,
+                'username' => 'super_admin',
                 'password' => Hash::make($admin_password),
             ];
             if (!\config('installer.model_has_roles')){
