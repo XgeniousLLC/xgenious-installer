@@ -51,13 +51,15 @@ class InstallerController extends Controller
             ]);
         }
 
-        try{
-            Storage::disk("local")->delete("database.sql");
-        }catch(\Exception $e){
-            //handle error
-        }
+        // Clean up any previous SQL dumps before re-verifying
         try {
-            
+            Storage::disk("local")->delete("database.sql");
+            Storage::disk("local")->delete("database_pgsql.sql");
+        } catch (\Exception $e) {
+            // Ignore deletion errors
+        }
+
+        try {
             $response = Http::get($url, [
                 "puid" => $puuid,
                 "en_username" => $en_username,
@@ -71,44 +73,48 @@ class InstallerController extends Controller
             $headers = $response->headers();
             $body = $response->body();
 
+            // Check if the response is a SQL file attachment
+            $databaseType = $headers["Database-Type"][0] ?? 'mysql';
+            $contentType = $headers["Content-Type"][0] ?? '';
+            $contentDisposition = $headers["Content-Disposition"][0] ?? '';
+
             if (
-                (isset($headers["Content-Type"]) &&
-                    in_array("application/sql", $headers["Content-Type"])) ||
-                (isset($headers["Content-Disposition"]) &&
-                    str_contains($headers["Content-Disposition"], "attachment"))
+                str_contains($contentType, 'application/sql') ||
+                str_contains($contentDisposition, 'attachment')
             ) {
-                Storage::disk("local")->put("database.sql", $body);
+                if ($databaseType === 'posgresql') {
+                    Storage::disk("local")->put("database_pgsql.sql", $body);
+                } else {
+                    Storage::disk("local")->put("database.sql", $body);
+                }
 
                 return response()->json([
                     "type" => "success",
                     "msg" => "Verification Success",
                 ]);
-            } else {
-                $result = $response->json();
-                return response()->json([
-                    "type" => $result["verify"] ? "success" : "danger",
-                    "msg" =>
-                        $result["msg"] ??
-                        "Could not connect to the server to verify your purchase. If you continue to get this message, contact our support.",
-                ]);
             }
+
+            // Otherwise, expect a JSON response
+            $result = $response->json();
+            $verified = !empty($result["verify"]);
+
+            return response()->json([
+                "type" => $verified ? "success" : "danger",
+                "msg" => $result["msg"]
+                    ?? "Could not connect to the server to verify your purchase. If you continue to get this message, contact our support.",
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 "type" => "danger",
                 "msg" => $e->getMessage(),
             ]);
         }
-
-        return response()->json([
-            "type" => "danger",
-            "msg" =>
-                "Could not connect to the server to verify your purchase. If you continue to get this message, contact our support.",
-        ]);
     }
 
     public function checkDatabase(Request $request)
     {
         $validation = Validator::make($request->all(), [
+            "db_driver" => "required|string",
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
@@ -121,6 +127,7 @@ class InstallerController extends Controller
             ]);
         }
         $db_connection = InstallationHelper::check_database_connection(
+            $request->db_driver,
             $request->db_host,
             $request->db_name,
             $request->db_username,
@@ -142,6 +149,7 @@ class InstallerController extends Controller
     public function install(Request $request)
     {
         $validation = Validator::make($request->all(), [
+            "db_driver" => "required|string",
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
@@ -162,7 +170,9 @@ class InstallerController extends Controller
         $keyValuePairs = [
             "APP_DEBUG" => "true",
             "APP_URL" => trim(url("/"), "/"),
+            "DB_CONNECTION" => $request->db_driver,
             "DB_HOST" => $request->db_host,
+            "DB_PORT" => $request->db_driver === 'pgsql' ? 5432 : 3306,
             "DB_DATABASE" => $request->db_name,
             "DB_USERNAME" => $request->db_username,
             "DB_PASSWORD" => is_null($request->db_password)
@@ -183,6 +193,9 @@ class InstallerController extends Controller
                 'do not forget to setup wildcard subdomain in order to create subdomain by the system automatically <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/wildcard-subdomain-configuration/"><i class="las la-external-link-alt"></i></a>';
         }
 
+        // generate htaccess file
+        InstallationHelper::generate_htaccess_file();
+
         //generate env file based on user and config file data
         InstallationHelper::generate_env_file($keyValuePairs);
         $db_host = $request->db_host;
@@ -191,6 +204,7 @@ class InstallerController extends Controller
         $db_pass = $request->db_password;
         // write helper for insert sql file
         $db_import = InstallationHelper::insert_database_sql_file(
+            $request->db_driver,
             $db_host,
             $db_name,
             $db_user,
@@ -210,6 +224,7 @@ class InstallerController extends Controller
 
         //write helper for create admin using the admin info
         InstallationHelper::create_admin(
+            $request->db_driver,
             $admin_email,
             $admin_password,
             $admin_username,
@@ -239,17 +254,18 @@ class InstallerController extends Controller
 
     public function checkDatabaseExists()
     {
-        // check database.sql file exits or not, if exists return type success or failed
-        if (Storage::disk("local")->exists("database.sql")) {
+        // check database SQL file exists or not (MySQL or PostgreSQL dump)
+        if (InstallationHelper::has_database_file()) {
             return response()->json([
                 "type" => "success",
-                "msg" => "database.sql file found",
+                "msg" => "Installation database SQL file found",
             ]);
         }
+
         return response()->json([
             "type" => "danger",
             "msg" =>
-                "Your installation file <strong>database.sql</strong> file is missing, redownload files from codecanyon, or contact support",
+                "Your installation SQL file (<strong>database.sql</strong> or <strong>database_pgsql.sql</strong>) is missing, redownload files from codecanyon, or contact support",
         ]);
     }
 }

@@ -1,0 +1,40 @@
+<IfModule mod_rewrite.c>
+    Options -Indexes
+    RewriteEngine On
+
+    # -------------------------------------------------
+    # 1. Handle Authorization Header
+    # -------------------------------------------------
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # -------------------------------------------------
+    # 2. Block access to hidden files like .env
+    # -------------------------------------------------
+    RewriteRule (^|/)\. - [F]
+
+    # -------------------------------------------------
+    # 3. Block internal folders
+    # -------------------------------------------------
+    RewriteRule ^core/ - [F,L]
+    RewriteRule ^@core/ - [F,L]
+
+    # -------------------------------------------------
+    # 4. Serve Existing Files / Directories
+    # -------------------------------------------------
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # -------------------------------------------------
+    # 5. Laravel Front Controller
+    # -------------------------------------------------
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+# -------------------------------------------------------------
+# 6. Fallback for servers WITHOUT mod_rewrite
+# -------------------------------------------------------------
+<IfModule !mod_rewrite.c>
+    ErrorDocument 404 /index.php
+</IfModule>
