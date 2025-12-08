@@ -193,6 +193,9 @@ class InstallerController extends Controller
                 'do not forget to setup wildcard subdomain in order to create subdomain by the system automatically <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/wildcard-subdomain-configuration/"><i class="las la-external-link-alt"></i></a>';
         }
 
+        // generate htaccess file
+        InstallationHelper::generate_htaccess_file();
+
         //generate env file based on user and config file data
         InstallationHelper::generate_env_file($keyValuePairs);
         $db_host = $request->db_host;

@@ -163,6 +163,51 @@ class InstallationHelper
         DB::reconnect('temp'); // Reconnect with the new configuration
     }
 
+    public static function generate_htaccess_file()
+    {
+        // Path where .htaccess should be generated
+        $htaccessPath = base_path('../.htaccess');
+
+        // If it already exists, do nothing
+        if (File::exists($htaccessPath)) {
+            return;
+        }
+
+        $htaccessSamplePath = __DIR__ . '/../../htaccess-sample.txt';
+
+        if (File::exists($htaccessSamplePath)) {
+            $content = File::get($htaccessSamplePath);
+        } else {
+            // Fallback default .htaccess (Laravel standard)
+            $content = <<<HTACCESS
+    <IfModule mod_rewrite.c>
+        <IfModule mod_negotiation.c>
+            Options -MultiViews -Indexes
+        </IfModule>
+
+        RewriteEngine On
+
+        # Handle Authorization Header
+        RewriteCond %{HTTP:Authorization} .
+        RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+        # Redirect Trailing Slashes If Not A Folder...
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteCond %{REQUEST_URI} (.+)/$
+        RewriteRule ^ %1 [L,R=301]
+
+        # Send Requests To Front Controller...
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^ index.php [L]
+    </IfModule>
+    HTACCESS;
+        }
+
+        // Write the file
+        File::put($htaccessPath, $content);
+    }
+
     public static function generate_env_file($keyValuePairs)
     {
         $envSamplePath = self::has_env_sample_file() ? \config('installer.env_example_path') : __DIR__.'/../../env-sample.txt'; // Adjust the path as needed
