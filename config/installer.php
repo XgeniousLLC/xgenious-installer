@@ -7,7 +7,7 @@ return [
     'admin_table' => 'admins',
     'multi_tenant' => false,
     'author' => 'xgenious',
-    'product_key' => 'ggfdvdv54354ft43543454354354hhh435',
+    'product_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e',
     'php_version' => '8.1',
     'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'Tokenizer', 'XML', 'cURL', 'fileinfo'],
     'website' => 'https://xgenious.com',
@@ -20,5 +20,5 @@ return [
     'mail_encryption' => 'tls',
     'model_has_roles' => true,
     'bundle_pack' => false,
-    'bundle_pack_key' => 'ggfdvdv54354ft43543454354354hhh435',
+    'bundle_pack_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e',
 ];

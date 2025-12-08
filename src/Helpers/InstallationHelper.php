@@ -335,7 +335,7 @@ class InstallationHelper
             $admin_data = [
                 'name' => $admin_name,
                 'email' => $admin_email,
-                'username' => 'super_admin',
+                'username' => $admin_username,
                 'password' => Hash::make($admin_password),
             ];
             if (!\config('installer.model_has_roles')) {
