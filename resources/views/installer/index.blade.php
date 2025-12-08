@@ -560,6 +560,30 @@
             border-radius: 5px;
             color: #333;
         }
+
+        #database_driver.form-select {
+            padding: 15px !important;
+            border: 1px solid #e2e2e2 !important;
+            border-radius: 0 !important;
+            margin-bottom: 10px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            color: #2C3E50 !important;
+            font-size: 16px !important;
+            background-color: #fff !important;
+            height: auto !important;
+            appearance: none !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23999' viewBox='0 0 16 16'%3e%3cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 15px center !important;
+            background-size: 12px !important;
+        }
+        
+        #database_driver.form-select:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: #ccc !important;
+        }
     </style>
 </head>
 <body>
@@ -759,8 +783,8 @@
                                 <h5>Database Information</h5>
                                 <div class="form-group">
                                     <label for="database_driver">Database Driver</label>
-                                    <select name="database_driver" id="database_driver" class="form-control">
-                                        <option value="mysql">MySQL</option>
+                                    <select name="database_driver" id="database_driver" class="form-select">
+                                        <option value="mysql" selected>MySQL</option>
                                         <option value="pgsql">PostgreSQL</option>
                                     </select>
                                 </div>

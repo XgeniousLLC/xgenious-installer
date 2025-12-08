@@ -82,7 +82,7 @@ class InstallerController extends Controller
                 str_contains($contentType, 'application/sql') ||
                 str_contains($contentDisposition, 'attachment')
             ) {
-                if ($databaseType === 'pgsql') {
+                if ($databaseType === 'posgresql') {
                     Storage::disk("local")->put("database_pgsql.sql", $body);
                 } else {
                     Storage::disk("local")->put("database.sql", $body);
