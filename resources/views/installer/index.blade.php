@@ -584,6 +584,16 @@
             box-shadow: none !important;
             border-color: #ccc !important;
         }
+        
+        #database_driver.form-select:disabled {
+            background-color: #f2f2f2 !important;
+            cursor: not-allowed !important;
+            opacity: 0.8 !important;
+        }
+        .db-alert{
+            margin-top: 20px;
+
+        }
     </style>
 </head>
 <body>
@@ -621,6 +631,11 @@
                             <h4>License to be used on one (1) domain only!</h4>
                             <p>The Regular license is for one website / domain only. If you want to use it on multiple
                                 websites / domains you have to purchase more licenses (1 website = 1 license).</p>
+                            @if(config('installer.database_type') === 'pgsql')
+                            <div class="alert alert-danger db-alert">
+                                <strong><i class="las la-exclamation-triangle"></i> Important Notice:</strong> This product requires <strong>PostgreSQL</strong> database. Please ensure you have PostgreSQL installed and configured on your server before proceeding with the installation.
+                            </div>
+                            @endif
                             <ul class="check-list">
                                 <li class="title">You Can Do</li>
                                 <li> Use on one (1) domain only.</li>
@@ -783,10 +798,11 @@
                                 <h5>Database Information</h5>
                                 <div class="form-group">
                                     <label for="database_driver">Database Driver</label>
-                                    <select name="database_driver" id="database_driver" class="form-select">
-                                        <option value="mysql" selected>MySQL</option>
-                                        <option value="pgsql">PostgreSQL</option>
+                                    <select name="database_driver" id="database_driver" class="form-select" disabled>
+                                        <option value="mysql" @if(config('installer.database_type') === 'mysql') selected @endif>MySQL</option>
+                                        <option value="pgsql" @if(config('installer.database_type') === 'pgsql') selected @endif>PostgreSQL</option>
                                     </select>
+                                    <small style="color: #999; display: block; margin: 5px 0;">Database type is automatically configured based on product requirements.</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="database_host">Database Host</label>
@@ -894,6 +910,8 @@
 
             //validate database field
             if (validateDatabaseField()){
+                $('#database_driver').prop('disabled', false);
+                
                 el.text('in progress...');
                 el.addClass('animate-flicker');
                 $.ajax({
@@ -917,7 +935,12 @@
                             $('#last_previous').hide()
                             $('#install_now').addClass('show').removeClass('hide');
                             $('#install_now').trigger('click');
+                        } else {
+                            $('#database_driver').prop('disabled', true);
                         }
+                    },
+                    error: function() {
+                        $('#database_driver').prop('disabled', true);
                     }
                 });
             }
@@ -933,6 +956,8 @@
 
             //validate admin field
             if (validateAdminField()){
+                $('#database_driver').prop('disabled', false);
+                
                 el.text('Installing...');
                 el.addClass('animate-flicker');
                 $.ajax({

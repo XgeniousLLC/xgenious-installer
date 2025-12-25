@@ -17,7 +17,7 @@ composer require xgenious/installer
 php artisan vendor:publish --provider="Xgenious\Installer\InstallerServiceProvider" --tag="config"
 ```
 
-### Add Midleware in ```app\Http\Kernel.php``` fle
+### Add Midleware in ```app\Http\Kernel.php``` file
 ``
 \Xgenious\Installer\Http\Middleware\InstallerMiddleware::class
 ``
@@ -44,6 +44,7 @@ return [
     'author' => 'xgenious', // envato author username
     'product_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e', //product key from xgenious license server
     'php_version' => '8.1', //minimum required php version
+    'database_type' => 'mysql', // mysql or pgsql (depending on product database type)
     'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'pdo_mysql', 'Tokenizer', 'XML', 'cURL', 'fileinfo'], //required php extensions
     'website' => 'https://xgenious.com', //author website url
     'email' => 'support@xgenious.com', //support url
