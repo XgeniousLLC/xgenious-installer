@@ -1,5 +1,10 @@
 # Xgenious Installer
 A Laravel package for installing xgenious script easily with a visual installer
+
+**Requirements:**
+- PHP >= 8.3
+- Laravel >= 13.0
+
 <img width="941" alt="image" src="https://github.com/xgenious-official/xgenious-installer/assets/28456389/b9877021-ee8a-456d-9428-e19949f9cf6a">
 
 
@@ -43,7 +48,7 @@ return [
     'multi_tenant' => false,
     'author' => 'xgenious', // envato author username
     'product_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e', //product key from xgenious license server
-    'php_version' => '8.1', //minimum required php version
+    'php_version' => '8.3', //minimum required php version
     'database_type' => 'mysql', // mysql or pgsql (depending on product database type)
     'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'pdo_mysql', 'Tokenizer', 'XML', 'cURL', 'fileinfo'], //required php extensions
     'website' => 'https://xgenious.com', //author website url

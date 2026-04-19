@@ -6,3 +6,4 @@
 .vs-code
 vendor
 .trunk
+.phpunit.result.cache
