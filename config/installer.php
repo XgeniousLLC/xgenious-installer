@@ -8,7 +8,7 @@ return [
     'multi_tenant' => false,
     'author' => 'xgenious',
     'product_key' => 'use_your_own_product_key_from_xgenious',
-    'php_version' => '8.3',
+    'php_version' => '8.2',
     'database_type' => 'mysql', // mysql or pgsql
     'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'Tokenizer', 'XML', 'cURL', 'fileinfo'],
     'website' => 'https://xgenious.com',

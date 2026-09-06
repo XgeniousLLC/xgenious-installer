@@ -2,8 +2,8 @@
 A Laravel package for installing xgenious script easily with a visual installer
 
 **Requirements:**
-- PHP >= 8.3
-- Laravel >= 13.0
+- PHP >= 8.2
+- Laravel 12.x or 13.x
 
 <img width="941" alt="image" src="https://github.com/xgenious-official/xgenious-installer/assets/28456389/b9877021-ee8a-456d-9428-e19949f9cf6a">
 
