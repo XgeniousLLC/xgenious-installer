@@ -176,7 +176,7 @@ class InstallerController extends Controller
     public function checkDatabase(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            "db_driver" => "required|string",
+            "db_driver" => "required|string|in:mysql,pgsql",
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
@@ -211,12 +211,12 @@ class InstallerController extends Controller
     public function install(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            "db_driver" => "required|string",
+            "db_driver" => "required|string|in:mysql,pgsql",
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
             "db_password" => "nullable",
-            "admin_email" => "required",
+            "admin_email" => "required|email",
             "admin_password" => "required",
             "admin_username" => "required",
             "admin_name" => "required",
@@ -239,7 +239,10 @@ class InstallerController extends Controller
             "DB_USERNAME" => $request->db_username,
             "DB_PASSWORD" => is_null($request->db_password)
                 ? ""
-                : '"'.$request->db_password.'"',
+                // Escape internal double-quotes so a password containing one
+                // can't close the quoted value early and let whatever follows
+                // be interpreted as additional .env directives.
+                : '"'.str_replace('"', '\\"', $request->db_password).'"',
             "BROADCAST_DRIVER" => config("installer.broadcast_driver", "log"),
             "CACHE_DRIVER" => config("installer.cache_driver", "file"),
             "QUEUE_CONNECTION" => config("installer.queue_connection", "sync"),
@@ -336,7 +339,7 @@ class InstallerController extends Controller
         return response()->json([
             "type" => "danger",
             "msg" =>
-                "Your installation SQL file (<strong>database.sql</strong> or <strong>database_pgsql.sql</strong>) is missing, redownload files from codecanyon, or contact support",
+                "Your installation SQL file (database.sql or database_pgsql.sql) is missing, redownload files from codecanyon, or contact support",
         ]);
     }
 }

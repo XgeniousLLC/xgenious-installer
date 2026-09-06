@@ -41,11 +41,16 @@
   function getJSON(url){
     return fetch(url, {headers: {'Accept': 'application/json'}}).then(r => r.json());
   }
-  function showMessage(elId, text, isSuccess){
+  // allowHtml defaults to false and must be passed explicitly per call site —
+  // several messages here echo text from a third-party server response
+  // (verify-purchase's `msg` comes from license.xgenious.com), so this is
+  // never allowed to render as HTML unless the caller is certain the string
+  // is our own trusted, hardcoded controller copy.
+  function showMessage(elId, text, isSuccess, allowHtml){
     const el = document.getElementById(elId);
     if(!el) return;
     if(!text){ el.className = 'form-message'; el.textContent = ''; return; }
-    el.innerHTML = text;
+    if(allowHtml){ el.innerHTML = text; } else { el.textContent = text; }
     el.className = 'form-message show' + (isSuccess ? ' success' : '');
   }
 
@@ -399,7 +404,10 @@
       document.getElementById('successBlock').style.display = 'block';
 
       if(installResult.tenant_note){
-        showMessage('tenantNote', installResult.tenant_note);
+        // Safe to render as HTML: this is our own hardcoded controller
+        // string (a wildcard-subdomain doc link), never user- or
+        // third-party-supplied.
+        showMessage('tenantNote', installResult.tenant_note, false, true);
       }
 
       hydrateIcons();

@@ -225,6 +225,17 @@ class InstallationHelper
 
     public static function generate_env_file(array $keyValuePairs)
     {
+        // Defense in depth: every value here ends up as the right-hand side
+        // of a KEY=value line written straight into .env. None of these
+        // (db host/name/username/password, etc.) should ever legitimately
+        // contain a line break — strip any that do rather than let a
+        // crafted value break out of its line and inject extra directives.
+        foreach ($keyValuePairs as $key => $value) {
+            if (is_string($value)) {
+                $keyValuePairs[$key] = str_replace(["\r", "\n"], '', $value);
+            }
+        }
+
         $envSamplePath = self::has_env_sample_file() ? config('installer.env_example_path') : __DIR__ . '/../../env-sample.txt';
 
         $envPath = base_path('.env');
@@ -559,7 +570,11 @@ class InstallationHelper
     public static function htaccess_status()
     {
         $path = self::htaccess_path();
-        $exists = File::exists($path);
+        // is_file(), not File::exists() (~file_exists()): a directory
+        // accidentally named .htaccess would otherwise read as "exists",
+        // and File::get() on a directory throws rather than returning
+        // false — @ doesn't suppress a thrown exception.
+        $exists = is_file($path);
 
         return [
             'exists' => $exists,
@@ -579,7 +594,7 @@ class InstallationHelper
         $path = self::htaccess_path();
 
         try {
-            if (!File::exists($path)) {
+            if (!is_file($path)) {
                 self::generate_htaccess_file();
             } else {
                 if (!self::meets_min_permission($path, false)) {
@@ -612,6 +627,23 @@ class InstallationHelper
         return base_path('../' . trim(config('installer.assets_dir', 'assets'), '/'));
     }
 
+    /**
+     * Guards against a misconfigured (empty, or "/") assets_dir resolving to
+     * the document root itself — which would otherwise make the checks below
+     * recursively scan/chmod everything alongside it, including core/ and
+     * its vendor/ tree. Treated the same as "directory doesn't exist".
+     */
+    private static function assets_directory_is_safe($path)
+    {
+        if (!File::isDirectory($path)) {
+            return false;
+        }
+        $resolved = realpath($path);
+        $docRoot = realpath(base_path('../'));
+
+        return $resolved !== false && $resolved !== $docRoot;
+    }
+
     private static function iterate_assets_entries($path)
     {
         return Finder::create()->in($path)->ignoreDotFiles(false);
@@ -620,7 +652,7 @@ class InstallationHelper
     public static function assets_permission_status()
     {
         $path = self::assets_directory_path();
-        if (!File::isDirectory($path)) {
+        if (!self::assets_directory_is_safe($path)) {
             return ['applicable' => false, 'bad_count' => 0, 'total' => 0];
         }
 
@@ -641,7 +673,7 @@ class InstallationHelper
     public static function fix_assets_permissions()
     {
         $path = self::assets_directory_path();
-        if (File::isDirectory($path)) {
+        if (self::assets_directory_is_safe($path)) {
             try {
                 @chmod($path, 0755);
                 foreach (self::iterate_assets_entries($path) as $entry) {
@@ -662,6 +694,12 @@ class InstallationHelper
 
     public static function uploads_permission_status()
     {
+        // If assets_dir itself doesn't resolve safely, nothing derived from
+        // it (including this path) should be trusted either.
+        if (!self::assets_directory_is_safe(self::assets_directory_path())) {
+            return ['applicable' => false, 'writable' => false];
+        }
+
         $path = self::uploads_directory_path();
         if (!File::isDirectory($path)) {
             return ['applicable' => false, 'writable' => false];
@@ -672,9 +710,11 @@ class InstallationHelper
 
     public static function fix_uploads_permission()
     {
-        $path = self::uploads_directory_path();
-        if (File::isDirectory($path) && !is_writable($path)) {
-            @chmod($path, 0755);
+        if (self::assets_directory_is_safe(self::assets_directory_path())) {
+            $path = self::uploads_directory_path();
+            if (File::isDirectory($path) && !is_writable($path)) {
+                @chmod($path, 0755);
+            }
         }
 
         return self::uploads_permission_status();
@@ -736,7 +776,7 @@ class InstallationHelper
      */
     public static function is_local_host($hostname)
     {
-        $hostname = (string) $hostname;
+        $hostname = strtolower((string) $hostname);
 
         if (in_array($hostname, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)) {
             return true;

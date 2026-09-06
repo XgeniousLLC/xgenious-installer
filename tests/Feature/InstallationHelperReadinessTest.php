@@ -237,4 +237,128 @@ class InstallationHelperReadinessTest extends TestCase
         $production = Request::create('https://mystore.com/install');
         $this->assertFalse(InstallationHelper::is_local_request($production));
     }
+
+    /* ---------------- Edge cases ---------------- */
+
+    /** @test */
+    public function is_local_host_treats_dot_test_domains_as_local_at_any_subdomain_depth()
+    {
+        $this->assertTrue(InstallationHelper::is_local_host('myapp.test'));
+        $this->assertTrue(InstallationHelper::is_local_host('api.myapp.test'));
+        $this->assertTrue(InstallationHelper::is_local_host('deeply.nested.myapp.test'));
+        // Case-insensitive: Laravel doesn't guarantee the Host header is
+        // already lowercased before it reaches here.
+        $this->assertTrue(InstallationHelper::is_local_host('MyApp.TEST'));
+    }
+
+    /** @test */
+    public function is_local_host_does_not_false_positive_on_domains_that_merely_contain_test()
+    {
+        // Must match ".test" as a suffix, not "test" as a substring anywhere.
+        $this->assertFalse(InstallationHelper::is_local_host('latest.com'));
+        $this->assertFalse(InstallationHelper::is_local_host('attest.io'));
+        $this->assertFalse(InstallationHelper::is_local_host('test.com'));
+    }
+
+    /** @test */
+    public function is_local_host_is_case_insensitive_for_exact_matches_too()
+    {
+        $this->assertTrue(InstallationHelper::is_local_host('LOCALHOST'));
+        $this->assertTrue(InstallationHelper::is_local_host('Localhost'));
+    }
+
+    /** @test */
+    public function is_local_host_handles_empty_and_malformed_input_safely()
+    {
+        $this->assertFalse(InstallationHelper::is_local_host(''));
+        $this->assertFalse(InstallationHelper::is_local_host(null));
+    }
+
+    /** @test */
+    public function is_local_host_respects_private_ip_range_boundaries()
+    {
+        // Just outside the RFC1918 172.16.0.0/12 block on either side.
+        $this->assertFalse(InstallationHelper::is_local_host('172.15.255.255'));
+        $this->assertTrue(InstallationHelper::is_local_host('172.16.0.0'));
+        $this->assertTrue(InstallationHelper::is_local_host('172.31.255.255'));
+        $this->assertFalse(InstallationHelper::is_local_host('172.32.0.0'));
+    }
+
+    /** @test */
+    public function htaccess_status_does_not_crash_when_htaccess_is_a_directory()
+    {
+        $path = base_path('../.htaccess');
+        File::makeDirectory($path);
+
+        $status = InstallationHelper::htaccess_status();
+
+        $this->assertFalse($status['exists']);
+        $this->assertFalse($status['readable']);
+        $this->assertFalse($status['hardened']);
+
+        File::deleteDirectory($path);
+    }
+
+    /** @test */
+    public function fix_htaccess_does_not_crash_when_htaccess_is_a_directory()
+    {
+        $path = base_path('../.htaccess');
+        File::makeDirectory($path);
+
+        // Can't actually fix it (a real file can't be created where a
+        // directory sits), but it must fail safely, not throw.
+        $status = InstallationHelper::fix_htaccess();
+        $this->assertFalse($status['exists']);
+
+        File::deleteDirectory($path);
+    }
+
+    /** @test */
+    public function assets_permission_status_refuses_to_treat_the_document_root_as_assets_dir()
+    {
+        // An empty (or misconfigured) assets_dir would otherwise resolve to
+        // the document root itself, and a recursive chmod there would touch
+        // core/ and everything else alongside it.
+        Config::set('installer.assets_dir', '');
+
+        $status = InstallationHelper::assets_permission_status();
+        $this->assertFalse($status['applicable']);
+
+        $fixed = InstallationHelper::fix_assets_permissions();
+        $this->assertFalse($fixed['applicable']);
+    }
+
+    /** @test */
+    public function assets_permission_status_refuses_a_slash_only_assets_dir_too()
+    {
+        Config::set('installer.assets_dir', '/');
+
+        $status = InstallationHelper::assets_permission_status();
+        $this->assertFalse($status['applicable']);
+    }
+
+    /** @test */
+    public function uploads_permission_status_is_not_applicable_when_assets_dir_resolves_to_document_root()
+    {
+        Config::set('installer.assets_dir', '');
+
+        $status = InstallationHelper::uploads_permission_status();
+        $this->assertFalse($status['applicable']);
+
+        $fixed = InstallationHelper::fix_uploads_permission();
+        $this->assertFalse($fixed['applicable']);
+    }
+
+    /** @test */
+    public function assets_permission_status_handles_an_empty_but_present_assets_directory()
+    {
+        Config::set('installer.assets_dir', 'test-assets');
+        File::makeDirectory(base_path('../test-assets'), 0755, true);
+
+        $status = InstallationHelper::assets_permission_status();
+
+        $this->assertTrue($status['applicable']);
+        $this->assertSame(1, $status['total']); // just the root dir itself, no contents
+        $this->assertSame(0, $status['bad_count']);
+    }
 }
