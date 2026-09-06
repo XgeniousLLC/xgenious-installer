@@ -133,6 +133,15 @@
     flex-direction:column;
     gap:20px;
   }
+  /* .rail is sticky for the two-column desktop layout only — once .shell
+     stacks to one column below, sidebar and panel share the same scroll
+     flow, so sticky would pin the sidebar on top of the panel content as
+     the page scrolls. Placed after the base .rail rule on purpose: with
+     equal specificity, an earlier media-query override loses the cascade
+     to a later unconditional rule regardless of viewport width. */
+  @media (max-width: 880px){
+    .rail{position:static;}
+  }
   .brand{
     display:flex;
     align-items:center;
