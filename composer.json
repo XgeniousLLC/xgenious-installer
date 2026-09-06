@@ -11,7 +11,8 @@
     ],
     "require": {
         "php": "^8.3",
-        "laravel/framework": "^13.4.0"
+        "laravel/framework": "^13.4.0",
+        "symfony/finder": "^7.0 || ^8.0"
     },
     "require-dev": {
         "orchestra/testbench": "^11.0.0",

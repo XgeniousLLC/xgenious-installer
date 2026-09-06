@@ -23,8 +23,9 @@ class InstallerController extends Controller
     public function verifyPurchase(Request $request)
     {
         $validation = Validator::make($request->all(), [
+            "source" => "nullable|in:envato,direct",
             "en_email" => "nullable|email",
-            "en_username" => "required",
+            "en_username" => "required_if:source,envato",
             "en_purchase_code" => "required",
         ]);
         if ($validation->fails()) {
@@ -34,8 +35,16 @@ class InstallerController extends Controller
             ]);
         }
 
+        $source = $request->input('source', 'envato');
         $en_username = $request->en_username;
         $en_purchase_code = $request->en_purchase_code;
+        if (empty($en_username)) {
+            // license.xgenious.com's validator currently requires a username
+            // unconditionally, even for XGENIOUS-prefixed direct-purchase codes
+            // it never actually checks it against. Backfill so direct buyers
+            // aren't asked for an "Envato username" they don't have.
+            $en_username = $request->en_email ?: $en_purchase_code;
+        }
         $domain = url("/");
         $url = InstallationHelper::$api_path;
         $puuid = config("installer.product_key");
@@ -62,6 +71,7 @@ class InstallerController extends Controller
         try {
             $response = Http::get($url, [
                 "puid" => $puuid,
+                "source" => $source,
                 "en_username" => $en_username,
                 "en_purchase_code" => $en_purchase_code,
                 "ip" => $request->ip(),
@@ -88,13 +98,19 @@ class InstallerController extends Controller
                     Storage::disk("local")->put("database.sql", $body);
                 }
 
+                // This is the real success path — verified purchases stream the
+                // SQL file directly rather than returning a JSON body. Tier
+                // info (if any) comes back as the X-Variant-Name header
+                // InstallationVerifyController already sets — purely
+                // informational for display, nothing here is persisted.
                 return response()->json([
                     "type" => "success",
                     "msg" => "Verification Success",
+                    "license_tier" => $headers["X-Variant-Name"][0] ?? null,
                 ]);
             }
 
-            // Otherwise, expect a JSON response
+            // Otherwise, expect a JSON response.
             $result = $response->json();
             $verified = !empty($result["verify"]);
 
@@ -102,6 +118,7 @@ class InstallerController extends Controller
                 "type" => $verified ? "success" : "danger",
                 "msg" => $result["msg"]
                     ?? "Could not connect to the server to verify your purchase. If you continue to get this message, contact our support.",
+                "license_tier" => $result['license_tier'] ?? null,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -109,6 +126,51 @@ class InstallerController extends Controller
                 "msg" => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * System-readiness checks for the wizard's "System readiness" step.
+     * Read-only — nothing here mutates the filesystem. See autoFix() for that.
+     */
+    public function checkSystem()
+    {
+        $extensions = [];
+        foreach (InstallationHelper::extensions() as $ext) {
+            $extensions[$ext] = InstallationHelper::extension_check($ext);
+        }
+
+        $folders = [];
+        foreach (InstallationHelper::folders() as $folder) {
+            $folders[$folder] = InstallationHelper::folder_permission($folder);
+        }
+
+        return response()->json([
+            'php_version' => InstallationHelper::php_version(),
+            'extensions' => $extensions,
+            'folders' => $folders,
+            'htaccess' => InstallationHelper::htaccess_status(),
+            'assets' => InstallationHelper::assets_permission_status(),
+            'uploads' => InstallationHelper::uploads_permission_status(),
+            'env_exposure' => InstallationHelper::env_exposure_status(),
+            'database_file' => InstallationHelper::has_database_file(),
+            'is_local' => InstallationHelper::is_local_request(request()),
+            'is_secure' => request()->secure(),
+        ]);
+    }
+
+    /**
+     * Applies every auto-fixable remediation from the readiness step, then
+     * returns the same shape as checkSystem() so the frontend can re-render
+     * from one response. Whatever can't be fixed here (AllowOverride/mod_rewrite)
+     * simply comes back unchanged — that's the "needs your host" case.
+     */
+    public function autoFix()
+    {
+        InstallationHelper::fix_htaccess();
+        InstallationHelper::fix_assets_permissions();
+        InstallationHelper::fix_uploads_permission();
+
+        return $this->checkSystem();
     }
 
     public function checkDatabase(Request $request)
@@ -235,6 +297,11 @@ class InstallerController extends Controller
             $db_pass
         );
 
+        // Licensing and version tracking (site_license_key, site_script_version)
+        // are already owned by the product's own "General Settings > Check
+        // Update" feature (xgenious/xgapiclient) once the admin activates —
+        // the installer doesn't duplicate that here.
+
         // remove cache file
         CacheCleaner::clearAllCaches();
 
@@ -249,7 +316,11 @@ class InstallerController extends Controller
             '">visit website</a> <p>' .
             $tenant_msg .
             '. setup cron job for subscription system work properly here is article for it <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/cron-job/"><i class="las la-external-link-alt"></i></a></p>'; //write instruction message for multi tenant or normal script
-        return response()->json(["type" => "success", "msg" => $msg]);
+        return response()->json([
+            "type" => "success",
+            "msg" => $msg,
+            "tenant_note" => $tenant_msg,
+        ]);
     }
 
     public function checkDatabaseExists()

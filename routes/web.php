@@ -9,4 +9,6 @@ Route::group(['prefix' => 'install','middleware' => ['web']], function () {
     Route::post('/verify-purchase', [InstallerController::class, 'verifyPurchase'])->name('installer.verify-purchase');
     Route::post('/check-database', [InstallerController::class, 'checkDatabase'])->name('installer.check-database');
     Route::get('/check-database-exists', [InstallerController::class, 'checkDatabaseExists'])->name('installer.check-database.exists');
+    Route::get('/check-system', [InstallerController::class, 'checkSystem'])->name('installer.check-system');
+    Route::post('/auto-fix', [InstallerController::class, 'autoFix'])->name('installer.auto-fix');
 });

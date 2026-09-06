@@ -7,8 +7,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\Finder\Finder;
 use function Laravel\Prompts\select;
 
 class InstallationHelper
@@ -519,5 +521,244 @@ class InstallationHelper
         pg_query($conn, "COMMIT");
 
         return ["type" => "success", "msg" => "PostgreSQL DB imported successfully"];
+    }
+
+    /**
+     * Minimum-permission check shared by the htaccess/assets checks below,
+     * matching the string-comparison style already used by
+     * ensure_directory_exists_and_writable() elsewhere in this class.
+     */
+    private static function meets_min_permission($path, $isDir)
+    {
+        $perms = @fileperms($path);
+        if ($perms === false) {
+            return false;
+        }
+        $perm = substr(sprintf('%o', $perms), -4);
+        return $perm >= ($isDir ? '0755' : '0644');
+    }
+
+    private static function htaccess_path()
+    {
+        return base_path('../.htaccess');
+    }
+
+    /**
+     * Whether an .htaccess file's *content* already contains the dotfile and
+     * core/ blocking rules shipped in htaccess-sample.txt. A file can "exist"
+     * and still be a stale, pre-hardening version — this catches that case.
+     */
+    private static function htaccess_is_hardened($content)
+    {
+        $blocksDotfiles = str_contains($content, '(^|/)\\.') || stripos($content, 'FilesMatch "^\\."') !== false;
+        $blocksCore = stripos($content, 'RewriteRule ^core/') !== false;
+
+        return $blocksDotfiles && $blocksCore;
+    }
+
+    public static function htaccess_status()
+    {
+        $path = self::htaccess_path();
+        $exists = File::exists($path);
+
+        return [
+            'exists' => $exists,
+            'readable' => $exists && self::meets_min_permission($path, false),
+            'hardened' => $exists && self::htaccess_is_hardened((string) (@File::get($path) ?: '')),
+        ];
+    }
+
+    /**
+     * Auto-fixes what can safely be auto-fixed: writes the file if missing
+     * (reusing generate_htaccess_file(), unchanged), corrects permissions if
+     * unreadable, and appends the hardening rules if an existing file
+     * predates them — without clobbering any custom rules already present.
+     */
+    public static function fix_htaccess()
+    {
+        $path = self::htaccess_path();
+
+        try {
+            if (!File::exists($path)) {
+                self::generate_htaccess_file();
+            } else {
+                if (!self::meets_min_permission($path, false)) {
+                    @chmod($path, 0644);
+                }
+
+                $content = (string) (@File::get($path) ?: '');
+                if (!self::htaccess_is_hardened($content)) {
+                    $sample = @File::get(__DIR__ . '/../../htaccess-sample.txt');
+                    if ($sample) {
+                        File::append($path, PHP_EOL . PHP_EOL . '# Added by installer: dotfile & core/ protection' . PHP_EOL . $sample);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Best-effort — htaccess_status() below reflects whatever state we ended up in.
+        }
+
+        return self::htaccess_status();
+    }
+
+    /**
+     * Path to the sibling static-assets directory (js/css/uploads served
+     * directly, outside the Laravel app root) — only meaningful for products
+     * that use this split layout. Everything below no-ops when it's absent,
+     * so this stays safe for products with a plain public/ layout too.
+     */
+    public static function assets_directory_path()
+    {
+        return base_path('../' . trim(config('installer.assets_dir', 'assets'), '/'));
+    }
+
+    private static function iterate_assets_entries($path)
+    {
+        return Finder::create()->in($path)->ignoreDotFiles(false);
+    }
+
+    public static function assets_permission_status()
+    {
+        $path = self::assets_directory_path();
+        if (!File::isDirectory($path)) {
+            return ['applicable' => false, 'bad_count' => 0, 'total' => 0];
+        }
+
+        // The root directory itself needs to stay traversable too, not just its contents.
+        $total = 1;
+        $bad = self::meets_min_permission($path, true) ? 0 : 1;
+
+        foreach (self::iterate_assets_entries($path) as $entry) {
+            $total++;
+            if (!self::meets_min_permission($entry->getPathname(), $entry->isDir())) {
+                $bad++;
+            }
+        }
+
+        return ['applicable' => true, 'bad_count' => $bad, 'total' => $total];
+    }
+
+    public static function fix_assets_permissions()
+    {
+        $path = self::assets_directory_path();
+        if (File::isDirectory($path)) {
+            try {
+                @chmod($path, 0755);
+                foreach (self::iterate_assets_entries($path) as $entry) {
+                    @chmod($entry->getPathname(), $entry->isDir() ? 0755 : 0644);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort.
+            }
+        }
+
+        return self::assets_permission_status();
+    }
+
+    public static function uploads_directory_path()
+    {
+        return self::assets_directory_path() . '/uploads';
+    }
+
+    public static function uploads_permission_status()
+    {
+        $path = self::uploads_directory_path();
+        if (!File::isDirectory($path)) {
+            return ['applicable' => false, 'writable' => false];
+        }
+
+        return ['applicable' => true, 'writable' => is_writable($path)];
+    }
+
+    public static function fix_uploads_permission()
+    {
+        $path = self::uploads_directory_path();
+        if (File::isDirectory($path) && !is_writable($path)) {
+            @chmod($path, 0755);
+        }
+
+        return self::uploads_permission_status();
+    }
+
+    /**
+     * The .env file's location, expressed relative to the document root
+     * (one level above base_path()) — so the public URL used to self-check
+     * exposure is correct whether the app lives at the doc root or is
+     * nested (e.g. core/.env alongside a sibling assets/ directory).
+     */
+    public static function env_public_relative_path()
+    {
+        $envDir = realpath(dirname(base_path('.env'))) ?: dirname(base_path('.env'));
+        $docRoot = realpath(base_path('../')) ?: base_path('../');
+
+        $relative = str_starts_with($envDir, $docRoot) ? substr($envDir, strlen($docRoot)) : '';
+        $relative = trim(str_replace('\\', '/', $relative), '/');
+
+        return ($relative !== '' ? $relative . '/' : '') . '.env';
+    }
+
+    /**
+     * Makes one real outbound request to this installation's own .env URL.
+     * This is also how "the host isn't honoring .htaccess" (AllowOverride
+     * disabled) gets detected: if .htaccess is present and readable but the
+     * .env file is still served, the web server is proven to be ignoring it.
+     */
+    public static function env_exposure_status()
+    {
+        $relativePath = self::env_public_relative_path();
+        $url = rtrim(url('/'), '/') . '/' . $relativePath;
+
+        try {
+            $response = Http::timeout((int) config('installer.license_env_check_timeout', 4))->get($url);
+            $body = (string) $response->body();
+            $looksLikeEnv = $response->status() === 200
+                && (str_contains($body, 'APP_KEY') || str_contains($body, 'DB_PASSWORD'));
+
+            return [
+                'checked_url' => $url,
+                'exposed' => $looksLikeEnv,
+                'error' => null,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'checked_url' => $url,
+                'exposed' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Automatic (localhost/127.0.0.1/.test/.local/private-IP) environment
+     * detection for the license step's "this won't count against your
+     * license" notice. Deliberately not exposed as anything the installing
+     * user can influence — it's read from the request host and nothing else.
+     */
+    public static function is_local_host($hostname)
+    {
+        $hostname = (string) $hostname;
+
+        if (in_array($hostname, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)) {
+            return true;
+        }
+        if (preg_match('/\.(local|test|localhost)$/i', $hostname)) {
+            return true;
+        }
+        if (preg_match('/^192\.168\.\d{1,3}\.\d{1,3}$/', $hostname)) {
+            return true;
+        }
+        if (preg_match('/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $hostname)) {
+            return true;
+        }
+        if (preg_match('/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/', $hostname)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function is_local_request(\Illuminate\Http\Request $request)
+    {
+        return self::is_local_host($request->getHost());
     }
 }

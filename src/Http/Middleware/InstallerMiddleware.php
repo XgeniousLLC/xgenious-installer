@@ -11,7 +11,14 @@ class InstallerMiddleware
     public function handle($request, Closure $next)
     {
 
-        if (InstallationHelper::isInstallerNeeded() && !$request->is(['install','install/verify-purchase','install/check-database','install/check-database-exists'])) {
+        if (InstallationHelper::isInstallerNeeded() && !$request->is([
+            'install',
+            'install/verify-purchase',
+            'install/check-database',
+            'install/check-database-exists',
+            'install/check-system',
+            'install/auto-fix',
+        ])) {
             return redirect('/install');
         }
 

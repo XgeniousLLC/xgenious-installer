@@ -22,4 +22,13 @@ return [
     'model_has_roles' => true,
     'bundle_pack' => false,
     'bundle_pack_key' => 'use_your_own_product_key_from_xgenious',
+
+    // Name of the sibling directory (relative to the document root) that holds
+    // statically-served assets (js/css/uploads) outside the Laravel app root.
+    // Only used if this directory actually exists — safe no-op otherwise.
+    'assets_dir' => 'assets',
+
+    // How long to wait (seconds) when the installer self-checks whether its
+    // own .env file is publicly reachable over HTTP.
+    'license_env_check_timeout' => 4,
 ];
