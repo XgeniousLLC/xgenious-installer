@@ -11,6 +11,6 @@
   <div class="form-message" id="adminMessage"></div>
   <div class="actions">
     <button class="btn btn-ghost" onclick="goTo(4)">Back</button>
-    <button class="btn btn-primary" id="installNowBtn" onclick="goTo(6)">Install now</button>
+    <button class="btn btn-primary" id="installNowBtn" onclick="continueFromAdmin()">Install now</button>
   </div>
 </section>

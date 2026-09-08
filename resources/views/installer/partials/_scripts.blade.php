@@ -95,13 +95,38 @@
   /* ---------------- System readiness (Step 2) ---------------- */
 
   let systemChecksLoaded = false;
+  // Conservative default: until we hear otherwise from checkSystem, treat the
+  // install as remote so the database password stays required.
+  let isLocalInstall = false;
   function loadSystemChecks(){
     if(systemChecksLoaded) return;
     systemChecksLoaded = true;
-    getJSON(ROUTES.checkSystem).then(renderChecklist).catch(()=>{
+    getJSON(ROUTES.checkSystem).then(data => {
+      isLocalInstall = !!data.is_local;
+      renderChecklist(data);
+    }).catch(()=>{
       document.getElementById('checkCount').textContent = 'Could not run checks';
       document.getElementById('checkSub').textContent = 'Refresh the page to try again.';
     });
+  }
+
+  /* ---------------- Required-field enforcement ---------------- */
+
+  document.querySelectorAll('.field input').forEach(el => {
+    el.addEventListener('input', () => el.classList.remove('invalid'));
+  });
+
+  // Returns the labels of any fields left empty, marking each such input
+  // with the .invalid style as a side effect.
+  function markMissing(fields){
+    const missing = [];
+    fields.forEach(([id, label]) => {
+      const el = document.getElementById(id);
+      const empty = !el.value.trim();
+      el.classList.toggle('invalid', empty);
+      if(empty) missing.push(label);
+    });
+    return missing;
   }
 
   function autoFixAndRecheck(){
@@ -366,6 +391,54 @@
       btn.textContent = old;
       showMessage('dbMessage', 'Could not reach the server. Please try again.');
     });
+  }
+
+  function continueFromDb(){
+    const fields = [
+      ['dbHost', 'Database host'],
+      ['dbName', 'Database name'],
+      ['dbUsername', 'Database username'],
+    ];
+    // Password may only be left blank for a local installation; anything
+    // reachable over the network must supply one.
+    if(!isLocalInstall){
+      fields.push(['dbPassword', 'Database password']);
+    }
+
+    const missing = markMissing(fields);
+    if(missing.length){
+      showMessage('dbMessage', `Please enter: ${missing.join(', ')}.`);
+      return;
+    }
+    showMessage('dbMessage', '');
+    goTo(5);
+  }
+
+  /* ---------------- Admin account (Step 5) ---------------- */
+
+  function continueFromAdmin(){
+    const fields = [
+      ['adminName', 'Full name'],
+      ['adminUsername', 'Username'],
+      ['adminEmail', 'Admin email'],
+      ['adminPassword', 'Password'],
+    ];
+
+    const missing = markMissing(fields);
+    if(missing.length){
+      showMessage('adminMessage', `Please enter: ${missing.join(', ')}.`);
+      return;
+    }
+
+    const emailEl = document.getElementById('adminEmail');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())){
+      emailEl.classList.add('invalid');
+      showMessage('adminMessage', 'Please enter a valid admin email address.');
+      return;
+    }
+
+    showMessage('adminMessage', '');
+    goTo(6);
   }
 
   /* ---------------- Finish / install (Step 6) ---------------- */

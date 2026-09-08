@@ -240,6 +240,7 @@
     font-size:14px;
   }
   .field input:focus, .field select:focus{border-color:var(--accent);}
+  .field input.invalid, .field select.invalid{border-color:var(--danger);}
   .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media (max-width:560px){.field-row{grid-template-columns:1fr;}}
 

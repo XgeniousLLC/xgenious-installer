@@ -15,6 +15,6 @@
   <div class="form-message" id="dbMessage"></div>
   <div class="actions">
     <button class="btn btn-ghost" onclick="goTo(3)">Back</button>
-    <button class="btn btn-primary" onclick="goTo(5)">Continue</button>
+    <button class="btn btn-primary" onclick="continueFromDb()">Continue</button>
   </div>
 </section>

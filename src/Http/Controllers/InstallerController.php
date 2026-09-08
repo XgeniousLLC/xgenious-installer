@@ -180,7 +180,12 @@ class InstallerController extends Controller
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
-            "db_password" => "nullable",
+            // A blank password is only acceptable for a local installation
+            // (e.g. a default-open local MySQL/Postgres); anything reached
+            // over the network must supply one.
+            "db_password" => InstallationHelper::is_local_request($request)
+                ? "nullable"
+                : "required",
         ]);
         if ($validation->fails()) {
             return response()->json([
@@ -215,7 +220,11 @@ class InstallerController extends Controller
             "db_name" => "required",
             "db_username" => "required",
             "db_host" => "required",
-            "db_password" => "nullable",
+            // A blank password is only acceptable for a local installation;
+            // anything reached over the network must supply one.
+            "db_password" => InstallationHelper::is_local_request($request)
+                ? "nullable"
+                : "required",
             "admin_email" => "required|email",
             "admin_password" => "required",
             "admin_username" => "required",
