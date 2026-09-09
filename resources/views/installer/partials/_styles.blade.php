@@ -1,16 +1,17 @@
 <style>
   :root{
-    --bg:#F5F6F1;
+    --bg:#FFFBF8;
     --surface:#FFFFFF;
-    --surface-2:#ECEFE5;
-    --border:#DCE1D3;
-    --ink:#1E2318;
-    --ink-muted:#5B6355;
-    --ink-faint:#8B937E;
-    --accent:#4C7A1E;
-    --accent-strong:#3C6116;
-    --accent-soft:#E4EEDA;
-    --accent-ink:#20330C;
+    --surface-2:#FFF1EC;
+    --border:#F0DDD8;
+    --ink:#2B1E1C;
+    --ink-muted:#6B5C5A;
+    --ink-faint:#9B8B88;
+    --accent:#E04A37;
+    --accent-strong:#C63A28;
+    --accent-soft:#FFF0ED;
+    --accent-ink:#6B1A10;
+    --brand:#F26B5A;
     --success:#2E7D46;
     --success-soft:#E1F3E3;
     --success-ink:#173C22;
@@ -23,25 +24,26 @@
     --info:#3E6E8C;
     --info-soft:#DEEAF0;
     --info-ink:#1D3C4E;
-    --code-bg:#1B1F15;
-    --code-ink:#DCE6CF;
-    --code-accent:#9ED26A;
-    --shadow:0 1px 2px rgba(30,35,24,0.04), 0 12px 32px -16px rgba(30,35,24,0.18);
-    --focus:#4C7A1E;
+    --code-bg:#231512;
+    --code-ink:#FDECE8;
+    --code-accent:#FF9A8E;
+    --shadow:0 1px 2px rgba(43,30,28,0.05), 0 12px 32px -16px rgba(43,30,28,0.16);
+    --focus:#E04A37;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#14170F;
-      --surface:#1B2015;
-      --surface-2:#22271A;
-      --border:#333B29;
-      --ink:#EDF0E5;
-      --ink-muted:#AAB29C;
-      --ink-faint:#78806B;
-      --accent:#8FC94A;
-      --accent-strong:#A8DA63;
-      --accent-soft:#26331A;
-      --accent-ink:#DCF0BE;
+      --bg:#1A1210;
+      --surface:#241917;
+      --surface-2:#2E201D;
+      --border:#3D2C28;
+      --ink:#FBE9E5;
+      --ink-muted:#C9B0AB;
+      --ink-faint:#9A8582;
+      --accent:#FF7A6B;
+      --accent-strong:#FF9A8E;
+      --accent-soft:#3A221E;
+      --accent-ink:#FFD9D2;
+      --brand:#F26B5A;
       --success:#6FCB8B;
       --success-soft:#1C3324;
       --success-ink:#C4EED0;
@@ -54,25 +56,26 @@
       --info:#7FB6D6;
       --info-soft:#1B2E38;
       --info-ink:#CFE7F5;
-      --code-bg:#0F110B;
-      --code-ink:#DCE6CF;
-      --code-accent:#9ED26A;
+      --code-bg:#0F0A09;
+      --code-ink:#FDECE8;
+      --code-accent:#FF9A8E;
       --shadow:0 1px 2px rgba(0,0,0,0.3), 0 20px 40px -20px rgba(0,0,0,0.6);
-      --focus:#A8DA63;
+      --focus:#FF7A6B;
     }
   }
   :root[data-theme="dark"]{
-    --bg:#14170F;
-    --surface:#1B2015;
-    --surface-2:#22271A;
-    --border:#333B29;
-    --ink:#EDF0E5;
-    --ink-muted:#AAB29C;
-    --ink-faint:#78806B;
-    --accent:#8FC94A;
-    --accent-strong:#A8DA63;
-    --accent-soft:#26331A;
-    --accent-ink:#DCF0BE;
+    --bg:#1A1210;
+    --surface:#241917;
+    --surface-2:#2E201D;
+    --border:#3D2C28;
+    --ink:#FBE9E5;
+    --ink-muted:#C9B0AB;
+    --ink-faint:#9A8582;
+    --accent:#FF7A6B;
+    --accent-strong:#FF9A8E;
+    --accent-soft:#3A221E;
+    --accent-ink:#FFD9D2;
+    --brand:#F26B5A;
     --success:#6FCB8B;
     --success-soft:#1C3324;
     --success-ink:#C4EED0;
@@ -82,11 +85,11 @@
     --danger:#E28268;
     --danger-soft:#3A2019;
     --danger-ink:#F6C8B9;
-    --code-bg:#0F110B;
-    --code-ink:#DCE6CF;
-    --code-accent:#9ED26A;
+    --code-bg:#0F0A09;
+    --code-ink:#FDECE8;
+    --code-accent:#FF9A8E;
     --shadow:0 1px 2px rgba(0,0,0,0.3), 0 20px 40px -20px rgba(0,0,0,0.6);
-    --focus:#A8DA63;
+    --focus:#FF7A6B;
   }
 
   *{box-sizing:border-box;}
@@ -149,13 +152,15 @@
     padding:2px 2px 4px;
   }
   .brand-mark{
-    width:34px;height:34px;border-radius:9px;
-    background:linear-gradient(155deg, var(--accent) 0%, var(--accent-strong) 100%);
+    width:38px;height:38px;border-radius:10px;
+    background:var(--brand);
     display:flex;align-items:center;justify-content:center;
-    color:#fff; font-family:'Sora',sans-serif; font-weight:700; font-size:14px; letter-spacing:.02em;
+    color:#fff;
     flex:none;
     box-shadow:var(--shadow);
+    padding:7px;
   }
+  .brand-mark svg{width:100%;height:100%;display:block;}
   .brand-text .name{font-family:'Sora',sans-serif; font-weight:600; font-size:15px; color:var(--ink); text-transform:capitalize;}
   .brand-text .sub{font-size:12px; color:var(--ink-faint);}
 

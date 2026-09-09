@@ -1,6 +1,12 @@
 <aside class="rail">
   <div class="brand">
-    <div class="brand-mark">{{ strtoupper(substr(config('installer.author', 'X'), 0, 2)) }}</div>
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Xgenious">
+        <path d="M7 14.5C7 12.2 8.9 10.2 11.2 10.2H44.8L67.6 48.4L44.8 86.2H11.2C8.9 86.2 7 84.3 7 82V77.8L31.2 48.4L7 18.8V14.5Z" fill="white"/>
+        <path d="M56.8 22.8C55.6 20.6 57.2 18 59.7 18H90.3C92.8 18 94.4 20.6 93.2 22.8L75.8 53L56.8 22.8Z" fill="white"/>
+        <path d="M75.8 62.8L93.2 93C94.4 95.2 92.8 97.8 90.3 97.8H59.7C57.2 97.8 55.6 95.2 56.8 93L75.8 62.8Z" fill="white"/>
+      </svg>
+    </div>
     <div class="brand-text">
       <div class="name">{{ config('installer.author') }}</div>
       <div class="sub">Setup &amp; installation</div>
