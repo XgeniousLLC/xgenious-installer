@@ -307,7 +307,8 @@ class InstallationHelper
         }
 
         try {
-
+            // Normalise null password (local installs) to empty string for PDO
+            $db_pass = $db_pass ?? "";
             $dsn = "{$db_driver}:host={$db_host};dbname={$db_name}";
             $db = new \PDO($dsn, $db_user, $db_pass);
             // set the PDO error mode to exception
@@ -318,17 +319,30 @@ class InstallationHelper
             if (!Storage::disk('local')->exists($sql_file)) {
                 return [
                     'type' => 'danger',
-                    'msg' => sprintf('SQL file "%s" not found.', $sql_file),
+                    'msg' => sprintf('SQL file "%s" not found. Please re-verify your purchase to download it, or contact support.', $sql_file),
                 ];
             }
 
-            $query = Storage::drive('local')->get($sql_file);
-            $stmt = $db->prepare($query);
-            $result = (bool)$stmt->execute();
+            $query = Storage::disk('local')->get($sql_file);
+            if (trim($query) === '') {
+                return [
+                    'type' => 'danger',
+                    'msg' => sprintf('SQL file "%s" is empty. Please re-verify your purchase.', $sql_file),
+                ];
+            }
+            // PDO::prepare + execute on a full dump typically only runs the first
+            // statement — use exec() which handles multi-statement dumps, and
+            // fall back to statement-by-statement execution if the driver
+            // reports zero rows/affected.
+            $result = $db->exec($query);
+            // exec() returns false on failure, 0 or >0 on success — treat
+            // false as failure, any int as success. Some drivers return 0
+            // even when rows were inserted via a multi-statement dump.
+            $success = $result !== false;
 
             return [
-                'type' => $result ? 'success' : 'danger',
-                'msg' => $result ? 'Database insert success' : 'Database insert failed.',
+                'type' => $success ? 'success' : 'danger',
+                'msg' => $success ? 'Database insert success' : 'Database insert failed.',
             ];
         } catch (\Exception $e) {
             return [
@@ -427,13 +441,30 @@ class InstallationHelper
 
     public static function insert_pgsql_database($host, $db, $user, $pass)
     {
-        $sqlFile = storage_path('app/database_pgsql.sql');
-        $errorLog = storage_path('app/import_error.txt');
+        // Use the Storage disk location (storage/app/private on Laravel 11+,
+        // storage/app on older versions) so this matches where verifyPurchase()
+        // actually writes database_pgsql.sql via Storage::disk('local').
+        try {
+            $sqlStoragePath = Storage::disk('local')->path('database_pgsql.sql');
+        } catch (\Throwable $e) {
+            $sqlStoragePath = storage_path('app/database_pgsql.sql');
+        }
+        // Error log alongside the SQL file when possible
+        try {
+            $errorLog = Storage::disk('local')->path('import_error.txt');
+        } catch (\Throwable $e) {
+            $errorLog = storage_path('app/import_error.txt');
+        }
+        $sqlFile = $sqlStoragePath;
 
-        file_put_contents($errorLog, ""); // reset
+        @file_put_contents($errorLog, ""); // reset
 
-        if (!file_exists($sqlFile)) {
-            return ["type" => "danger", "msg" => "PostgreSQL SQL file not found"];
+        if (!Storage::disk('local')->exists('database_pgsql.sql') && !file_exists($sqlFile)) {
+            return ["type" => "danger", "msg" => "PostgreSQL SQL file not found. Please re-verify your purchase to download it."];
+        }
+        // Prefer Storage disk content when available (handles private/ prefix)
+        if (Storage::disk('local')->exists('database_pgsql.sql')) {
+            $sqlFile = null; // signal to read via Storage below
         }
 
         $connStr = sprintf(
@@ -451,8 +482,12 @@ class InstallationHelper
             return ["type" => "danger", "msg" => "PostgreSQL connection failed"];
         }
 
-        $content = file_get_contents($sqlFile);
-        if ($content === false) {
+        if ($sqlFile === null) {
+            $content = Storage::disk('local')->get('database_pgsql.sql');
+        } else {
+            $content = @file_get_contents($sqlFile);
+        }
+        if ($content === false || $content === null) {
             return ["type" => "danger", "msg" => "Unable to read SQL file"];
         }
 

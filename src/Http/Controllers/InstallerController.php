@@ -288,7 +288,7 @@ class InstallerController extends Controller
             InstallationHelper::reverse_to_default_env();
             return response()->json([
                 "type" => "danger",
-                "msg" => 'failed to update env',
+                "msg" => $db_import["msg"] ?? 'failed to update env',
             ]);
         }
         $admin_email = $request->admin_email;
