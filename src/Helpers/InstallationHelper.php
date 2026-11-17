@@ -323,32 +323,80 @@ class InstallationHelper
                 ];
             }
 
-            $query = Storage::disk('local')->get($sql_file);
-            if (trim($query) === '') {
+            $sql_path = Storage::disk('local')->path($sql_file);
+            if (filesize($sql_path) === 0) {
                 return [
                     'type' => 'danger',
                     'msg' => sprintf('SQL file "%s" is empty. Please re-verify your purchase.', $sql_file),
                 ];
             }
-            // PDO::prepare + execute on a full dump typically only runs the first
-            // statement — use exec() which handles multi-statement dumps, and
-            // fall back to statement-by-statement execution if the driver
-            // reports zero rows/affected.
-            $result = $db->exec($query);
-            // exec() returns false on failure, 0 or >0 on success — treat
-            // false as failure, any int as success. Some drivers return 0
-            // even when rows were inserted via a multi-statement dump.
-            $success = $result !== false;
+
+            // Run the dump one statement at a time. Sending a large dump as a single
+            // exec() exceeds max_allowed_packet on many hosts and fails with
+            // "MySQL server has gone away".
+            foreach (self::sql_statements($sql_path) as $statement) {
+                $db->exec($statement);
+            }
 
             return [
-                'type' => $success ? 'success' : 'danger',
-                'msg' => $success ? 'Database insert success' : 'Database insert failed.',
+                'type' => 'success',
+                'msg' => 'Database insert success',
             ];
         } catch (\Exception $e) {
             return [
                 'type' => 'danger',
                 'msg' => 'Database insert failed: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Stream the statements of a SQL dump file one at a time, without loading the
+     * whole file in memory. Semicolons inside quoted strings do not end a statement,
+     * and comment-only lines between statements are skipped.
+     */
+    private static function sql_statements(string $path): \Generator
+    {
+        $handle = fopen($path, 'rb');
+        $statement = '';
+        $quote = null;
+
+        try {
+            while (($line = fgets($handle)) !== false) {
+                if ($quote === null && trim($statement) === '') {
+                    $trimmed = ltrim($line);
+                    if ($trimmed === '' || str_starts_with($trimmed, '--') || (str_starts_with($trimmed, '/*') && !str_starts_with($trimmed, '/*!'))) {
+                        continue;
+                    }
+                }
+
+                $length = strlen($line);
+                for ($i = 0; $i < $length; $i++) {
+                    $char = $line[$i];
+                    if ($quote !== null) {
+                        if ($char === '\\') {
+                            $i++;
+                        } elseif ($char === $quote) {
+                            $quote = null;
+                        }
+                    } elseif ($char === "'" || $char === '"' || $char === '`') {
+                        $quote = $char;
+                    }
+                }
+
+                $statement .= $line;
+
+                if ($quote === null && substr(rtrim($line), -1) === ';') {
+                    yield $statement;
+                    $statement = '';
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        if (trim($statement) !== '') {
+            yield $statement;
         }
     }
 
