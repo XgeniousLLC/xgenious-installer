@@ -10,6 +10,19 @@
     <div class="field"><label for="dbUsername">Database username</label><input type="text" id="dbUsername" placeholder="database_user"></div>
   </div>
   <div class="field"><label for="dbPassword">Database password</label><input type="password" id="dbPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+  @if(config('installer.database_type') === 'pgsql' && config('installer.multi_tenant') && count(config('installer.database_layouts', [])) > 0)
+    <div class="field">
+      <label for="dbLayout">PostgreSQL tenant layout</label>
+      <select id="dbLayout">
+        @foreach(config('installer.database_layouts', []) as $layout => $label)
+          <option value="{{ $layout }}" @selected(config('installer.database_layout', 'per_tenant') === $layout)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+        Pooled mode is finalized after installation by the product's tenant setup command.
+      </div>
+    </div>
+  @endif
   <button type="button" class="btn btn-ghost" id="testDbBtn" onclick="testDb()">Test connection</button>
   <span id="dbResult" style="margin-left:10px; font-size:13px; color:var(--success); display:none; align-items:center; gap:5px;"><span data-icon="check" style="width:13px; height:13px; display:inline-flex;"></span>Connected successfully</span>
   <div class="form-message" id="dbMessage"></div>

@@ -22,18 +22,29 @@ composer require xgenious/installer
 php artisan vendor:publish --provider="Xgenious\Installer\InstallerServiceProvider" --tag="config"
 ```
 
-### Add Midleware in ```app\Http\Kernel.php``` file
-``
-\Xgenious\Installer\Http\Middleware\InstallerMiddleware::class
-``
-```php
+### Register the middleware
 
-example
-  protected $middleware = [
-        /* Laravel defult middleware */
-        \Xgenious\Installer\Http\Middleware\InstallerMiddleware::class
-    ];
-````
+Laravel 11/12 (`bootstrap/app.php`):
+
+```php
+use Illuminate\Foundation\Configuration\Middleware;
+
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->append(\Xgenious\Installer\Http\Middleware\InstallerMiddleware::class);
+})
+```
+
+Laravel 10 and older (`app/Http/Kernel.php`):
+
+```php
+protected $middleware = [
+    // ...
+    \Xgenious\Installer\Http\Middleware\InstallerMiddleware::class,
+];
+```
+
+The middleware only registers the `/install` routes while the app has no
+`DB_CONNECTION` in `.env`, so it is a no-op after installation.
 
 ### Config Value Explanation
 
@@ -45,11 +56,24 @@ return [
     'super_admin_role_id' => 3, // super admin role id
     'admin_model' => \App\Admin::class, //admin modal 
     'admin_table' => 'admins', //admin table
-    'multi_tenant' => false,
+    'multi_tenant' => false, // show the PostgreSQL tenant layout selector when true
     'author' => 'xgenious', // envato author username
     'product_key' => '8de1f072836b127749b7aa2b575ffc0002ade20e', //product key from xgenious license server
     'php_version' => '8.3', //minimum required php version
     'database_type' => 'mysql', // mysql or pgsql (depending on product database type)
+
+    // PostgreSQL tenant layout selector (pgsql + multi_tenant only).
+    // Empty array hides the selector.
+    'database_layouts' => [
+        'per_tenant' => 'Multi-database — one database per tenant',
+        'pooled' => 'Three shared databases — landlord + tenant (RLS) + horizon',
+    ],
+    'database_layout' => 'per_tenant', // default selection
+
+    // Product class that applies the selected layout after install. It must
+    // expose apply(string $layout, array $db): array. Null disables it.
+    'install_callback' => null,
+
     'extensions' => ['BCMath', 'Ctype', 'JSON', 'Mbstring', 'OpenSSL', 'PDO', 'pdo_mysql', 'Tokenizer', 'XML', 'cURL', 'fileinfo'], //required php extensions
     'website' => 'https://xgenious.com', //author website url
     'email' => 'support@xgenious.com', //support url
@@ -62,8 +86,64 @@ return [
     'model_has_roles' => true,
     'bundle_pack' => false, //if the product has bundle pack
     'bundle_pack_key' => 'dsfasd', //bundle pack product key
+
+    'assets_dir' => 'assets', // sibling static-assets directory, if any
+    'license_env_check_timeout' => 4, // seconds for the .env exposure self-check
 ];
 ```
+
+### PostgreSQL tenant layouts
+
+When the product uses PostgreSQL (`database_type => 'pgsql'`) and
+`multi_tenant` is true, the database step renders a layout selector with the
+options configured in `database_layouts`. The selected key is sent as
+`database_layout` and returned in the install response:
+
+```json
+{
+  "type": "success",
+  "database_layout": "pooled",
+  "layout_ok": true,
+  "msg": "..."
+}
+```
+
+The package deliberately does **not** know product-specific env keys,
+databases, or migration commands. Point `install_callback` at a class in your
+application:
+
+```php
+'install_callback' => \App\Services\Installation\PostgresInstallationService::class,
+```
+
+The callback runs after the SQL dump import and admin creation, before caches
+are cleared, and receives:
+
+```php
+public function apply(string $layout, array $db): array
+{
+    // $db = [
+    //   'driver'   => 'pgsql',
+    //   'host'     => '127.0.0.1',
+    //   'port'     => 5432,
+    //   'name'     => 'my_app',
+    //   'username' => 'my_app',
+    //   'password' => '...',
+    // ]
+
+    // Write app-specific env keys, create extra databases, etc.
+    return [
+        'ok' => true,
+        'message' => 'Run <code>php artisan tenancy:pg-setup --mode=pooled</code> to finish.',
+    ];
+}
+```
+
+`message` is appended to the success message. Returning `ok => false` does not
+roll back the installation — it marks `layout_ok` false and shows the message as
+a warning, so the operator can fix the remaining steps manually.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Migrate from old Installer
 remove ``install`` folder, and remove ``install`` folder redirection from the root ``index.php ``file

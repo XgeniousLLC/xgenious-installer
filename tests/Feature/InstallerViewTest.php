@@ -38,6 +38,48 @@ class InstallerViewTest extends TestCase
     }
 
     /** @test */
+    public function the_postgresql_layout_selector_renders_for_multi_tenant_installs()
+    {
+        Config::set('installer.database_type', 'pgsql');
+        Config::set('installer.multi_tenant', true);
+        Config::set('installer.database_layouts', [
+            'per_tenant' => 'Multi-database',
+            'pooled' => 'Three shared databases',
+        ]);
+        Config::set('installer.database_layout', 'per_tenant');
+
+        $html = view('installer::installer.index')->render();
+
+        $this->assertStringContainsString('id="dbLayout"', $html);
+        $this->assertStringContainsString('value="pooled"', $html);
+        $this->assertStringContainsString('database_layout', $html);
+    }
+
+    /** @test */
+    public function the_layout_selector_is_hidden_for_mysql_installs()
+    {
+        Config::set('installer.database_type', 'mysql');
+        Config::set('installer.multi_tenant', true);
+        Config::set('installer.database_layouts', ['per_tenant' => 'Multi-database']);
+
+        $html = view('installer::installer.index')->render();
+
+        $this->assertStringNotContainsString('id="dbLayout"', $html);
+    }
+
+    /** @test */
+    public function the_layout_selector_is_hidden_for_single_tenant_installs()
+    {
+        Config::set('installer.database_type', 'pgsql');
+        Config::set('installer.multi_tenant', false);
+        Config::set('installer.database_layouts', ['per_tenant' => 'Multi-database']);
+
+        $html = view('installer::installer.index')->render();
+
+        $this->assertStringNotContainsString('id="dbLayout"', $html);
+    }
+
+    /** @test */
     public function the_local_environment_notice_only_renders_for_local_hosts()
     {
         $this->app->instance('request', Request::create('https://mystore.com/install'));

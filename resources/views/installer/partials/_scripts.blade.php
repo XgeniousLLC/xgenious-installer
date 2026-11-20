@@ -361,13 +361,16 @@
   /* ---------------- Database (Step 4) ---------------- */
 
   function collectDbFields(){
-    return {
+    const fields = {
       db_driver: document.getElementById('dbDriver').value,
       db_host: document.getElementById('dbHost').value,
       db_name: document.getElementById('dbName').value,
       db_username: document.getElementById('dbUsername').value,
       db_password: document.getElementById('dbPassword').value,
     };
+    const layout = document.getElementById('dbLayout');
+    if(layout){ fields.database_layout = layout.value; }
+    return fields;
   }
 
   function testDb(){

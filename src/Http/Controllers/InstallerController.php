@@ -7,8 +7,10 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Xgenious\Installer\Helpers\InstallationHelper;
 use Xgenious\Installer\Helpers\CacheCleaner;
+use Xgenious\Installer\Support\DatabaseLayout;
 
 class InstallerController extends Controller
 {
@@ -215,6 +217,11 @@ class InstallerController extends Controller
 
     public function install(Request $request)
     {
+        $layoutRules = ["nullable", "string"];
+        if (DatabaseLayout::options() !== []) {
+            $layoutRules[] = Rule::in(array_keys(DatabaseLayout::options()));
+        }
+
         $validation = Validator::make($request->all(), [
             "db_driver" => "required|string|in:mysql,pgsql",
             "db_name" => "required",
@@ -225,6 +232,7 @@ class InstallerController extends Controller
             "db_password" => InstallationHelper::is_local_request($request)
                 ? "nullable"
                 : "required",
+            "database_layout" => $layoutRules,
             "admin_email" => "required|email",
             "admin_password" => "required",
             "admin_username" => "required",
@@ -314,6 +322,22 @@ class InstallerController extends Controller
         // Update" feature (xgenious/xgapiclient) once the admin activates —
         // the installer doesn't duplicate that here.
 
+        // Hand the PostgreSQL tenant layout to the product callback. The
+        // package only resolves/validates the layout; the callback owns the
+        // product-specific env keys, extra databases, and follow-up commands.
+        $layout = DatabaseLayout::resolve($request->input("database_layout"));
+        $layoutResult = ["ok" => true, "message" => ""];
+        if ($request->db_driver === "pgsql" && config("installer.multi_tenant", false)) {
+            $layoutResult = DatabaseLayout::apply($layout, [
+                "driver" => "pgsql",
+                "host" => $db_host,
+                "port" => 5432,
+                "name" => $db_name,
+                "username" => $db_user,
+                "password" => (string) $db_pass,
+            ]);
+        }
+
         // remove cache file
         CacheCleaner::clearAllCaches();
 
@@ -328,10 +352,17 @@ class InstallerController extends Controller
             '">visit website</a> <p>' .
             $tenant_msg .
             '. setup cron job for subscription system work properly here is article for it <a target="_blank" href="https://docs.xgenious.com/docs/nazmart-multi-tenancy-ecommerce-platform-saas/cron-job/"><i class="las la-external-link-alt"></i></a></p>'; //write instruction message for multi tenant or normal script
+
+        if ($layoutResult["message"] !== "") {
+            $msg .= "<p>" . $layoutResult["message"] . "</p>";
+        }
+
         return response()->json([
             "type" => "success",
             "msg" => $msg,
             "tenant_note" => $tenant_msg,
+            "database_layout" => $layout,
+            "layout_ok" => (bool) ($layoutResult["ok"] ?? true),
         ]);
     }
 
