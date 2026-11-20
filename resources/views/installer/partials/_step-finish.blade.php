@@ -18,6 +18,7 @@
     </div>
 
     <div class="form-message" id="tenantNote" style="text-align:left;"></div>
+    <div class="form-message" id="layoutNote" style="text-align:left;"></div>
 
     <div class="next-links">
       <a href="{{ url('/') }}"><div class="nl-t"><span class="nl-icon" data-icon="key"></span>Go to admin panel</div><div class="nl-d">Sign in with the account you just created</div></a>

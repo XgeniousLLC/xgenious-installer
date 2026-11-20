@@ -104,6 +104,7 @@ options configured in `database_layouts`. The selected key is sent as
   "type": "success",
   "database_layout": "pooled",
   "layout_ok": true,
+  "layout_note": "Run php artisan tenancy:pg-setup --mode=pooled to finish.",
   "msg": "..."
 }
 ```
@@ -139,9 +140,11 @@ public function apply(string $layout, array $db): array
 }
 ```
 
-`message` is appended to the success message. Returning `ok => false` does not
-roll back the installation — it marks `layout_ok` false and shows the message as
-a warning, so the operator can fix the remaining steps manually.
+`message` is returned as `layout_note`, appended to `msg`, and rendered on the
+success screen (HTML is allowed because the callback is trusted product code).
+Returning `ok => false` does not roll back the installation — it marks
+`layout_ok` false and still shows the message, so the operator can fix the
+remaining steps manually.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 

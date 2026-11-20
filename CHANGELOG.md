@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.9.1 — 2026-11-20
+
+### Fixed
+
+- Render the install callback's message on the success screen. The new wizard
+  ignores the generic `msg` on success, so the layout follow-up instructions
+  are now returned as `layout_note` and shown in the finish step.
+
 ## v2.9.0 — 2026-11-20
 
 ### Added

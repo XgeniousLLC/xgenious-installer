@@ -34,6 +34,7 @@ class InstallerViewTest extends TestCase
         $this->assertStringContainsString('System readiness', $html);
         $this->assertStringContainsString('id="checklist"', $html);
         $this->assertStringContainsString('id="steplist"', $html);
+        $this->assertStringContainsString('id="layoutNote"', $html);
         $this->assertStringContainsString('function verifyLicense', $html);
     }
 

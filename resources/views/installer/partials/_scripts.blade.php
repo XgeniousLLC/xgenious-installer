@@ -486,6 +486,13 @@
         showMessage('tenantNote', installResult.tenant_note, false, true);
       }
 
+      if(installResult.layout_note){
+        // Produced by the product's trusted install_callback, which owns the
+        // product-specific follow-up instructions (for example a tenant setup
+        // command). The installer package does not interpret this HTML.
+        showMessage('layoutNote', installResult.layout_note, true, true);
+      }
+
       hydrateIcons();
     }
 

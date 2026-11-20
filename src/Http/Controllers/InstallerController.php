@@ -363,6 +363,7 @@ class InstallerController extends Controller
             "tenant_note" => $tenant_msg,
             "database_layout" => $layout,
             "layout_ok" => (bool) ($layoutResult["ok"] ?? true),
+            "layout_note" => (string) ($layoutResult["message"] ?? ""),
         ]);
     }
 
